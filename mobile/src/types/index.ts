@@ -97,6 +97,12 @@ export interface Client {
   phone?: string;
   address?: string;
   notes?: string;
+  events?: Array<{
+    id: string;
+    name: string;
+    date: string;
+    status: EventStatus;
+  }>;
   createdAt: string;
   updatedAt: string;
 }

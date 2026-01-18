@@ -23,9 +23,15 @@ export default function ClientsListScreen({ navigation }: any) {
   }
 
   const renderClient = ({ item }: { item: Client }) => (
-    <TouchableOpacity className="mx-4 my-2">
+    <TouchableOpacity
+      className="mx-4 my-2"
+      onPress={() => navigation.navigate('ClientDetail', { clientId: item.id })}
+    >
       <Card>
-        <Text className="text-lg font-bold text-slate-100">{item.name}</Text>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-lg font-bold text-slate-100">{item.name}</Text>
+          <Text className="text-xs font-semibold text-violet-300">Ver</Text>
+        </View>
         <View className="mt-2 space-y-1">
           {item.email ? (
             <Text className="text-sm text-slate-400">{item.email}</Text>

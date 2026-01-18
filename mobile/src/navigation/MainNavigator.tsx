@@ -9,11 +9,13 @@ import PaymentDetailScreen from '../screens/events/PaymentDetailScreen';
 import ClientsListScreen from '../screens/clients/ClientsListScreen';
 import CreateClientScreen from '../screens/clients/CreateClientScreen';
 import SelectClientScreen from '../screens/clients/SelectClientScreen';
+import ClientDetailScreen from '../screens/clients/ClientDetailScreen';
 import AdminSummaryScreen from '../screens/admin/AdminSummaryScreen';
 import { useAuthStore } from '../store/authStore';
 import { UserRole } from '../types';
 import LogoutButton from '../components/ui/LogoutButton';
 import RolePill from '../components/ui/RolePill';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -47,6 +49,7 @@ function ClientsStack() {
   return (
     <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen name="ClientsList" component={ClientsListScreen} options={{ title: 'Clientes' }} />
+      <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: 'Detalle del cliente' }} />
       <Stack.Screen name="CreateClient" component={CreateClientScreen} options={{ title: 'Nuevo cliente' }} />
     </Stack.Navigator>
   );
@@ -67,6 +70,7 @@ export default function MainNavigator({ route }: any) {
     | 'Clients'
     | 'Admin'
     | undefined;
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -78,9 +82,9 @@ export default function MainNavigator({ route }: any) {
         tabBarStyle: {
           backgroundColor: '#0F172A',
           borderTopWidth: 0,
-          paddingBottom: 10,
+          paddingBottom: Math.max(10, insets.bottom + 6),
           paddingTop: 10,
-          height: 64,
+          height: 64 + insets.bottom,
           marginHorizontal: 16,
           marginBottom: 12,
           borderRadius: 24,

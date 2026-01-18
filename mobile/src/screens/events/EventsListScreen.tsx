@@ -10,6 +10,20 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/format';
 
+const daysSince = (date: Date) => {
+  const now = Date.now();
+  return Math.floor((now - date.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+const getLastPaymentDate = (payments?: Array<{ paidAt: string }>) => {
+  if (!payments || payments.length === 0) {
+    return null;
+  }
+  return payments
+    .map((payment) => new Date(payment.paidAt))
+    .sort((a, b) => b.getTime() - a.getTime())[0];
+};
+
 const statusVariant = (status: EventStatus) => {
   switch (status) {
     case EventStatus.CONFIRMED:
@@ -46,7 +60,12 @@ export default function EventsListScreen({ navigation }: any) {
     );
   }
 
-  const renderEvent = ({ item }: { item: Event }) => (
+  const renderEvent = ({ item }: { item: Event }) => {
+    const lastPayment = getLastPaymentDate(item.payments);
+    const referenceDate = lastPayment || new Date(item.createdAt);
+    const isOverdue = daysSince(referenceDate) >= 30;
+
+    return (
     <TouchableOpacity
       className="mx-4 my-2"
       onPress={() => navigation.navigate('EventDetail', { eventId: item.id })}
@@ -56,7 +75,12 @@ export default function EventsListScreen({ navigation }: any) {
           <Text className="text-lg font-bold text-slate-100 flex-1 pr-2">
             {item.name}
           </Text>
-          <Badge label={item.status} variant={statusVariant(item.status)} />
+          <View className="items-end space-y-2">
+            <Badge label={item.status} variant={statusVariant(item.status)} />
+            {isOverdue && (
+              <Badge label="Pago atrasado" variant="danger" />
+            )}
+          </View>
         </View>
         <Text className="mt-2 text-sm text-slate-400">
           {new Date(item.date).toLocaleDateString('es-AR')}
@@ -83,7 +107,8 @@ export default function EventsListScreen({ navigation }: any) {
         </View>
       </Card>
     </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <Screen>

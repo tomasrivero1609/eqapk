@@ -11,6 +11,20 @@ import { Payment } from '../../types';
 import { formatCurrency } from '../../utils/format';
 import { convertAmount } from '../../utils/currency';
 
+const daysSince = (date: Date) => {
+  const now = Date.now();
+  return Math.floor((now - date.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+const getLastPaymentDate = (payments?: Array<{ paidAt: string }>) => {
+  if (!payments || payments.length === 0) {
+    return null;
+  }
+  return payments
+    .map((payment) => new Date(payment.paidAt))
+    .sort((a, b) => b.getTime() - a.getTime())[0];
+};
+
 export default function EventDetailScreen({ route, navigation }: any) {
   const { eventId } = route.params;
   const [visiblePaymentsCount, setVisiblePaymentsCount] = useState(10);
@@ -82,6 +96,9 @@ export default function EventDetailScreen({ route, navigation }: any) {
     return sum + converted;
   }, 0);
   const balance = totalDue - totalPaid;
+  const lastPayment = getLastPaymentDate(payments);
+  const overdueReference = lastPayment || new Date(event.createdAt);
+  const isOverdue = daysSince(overdueReference) >= 30;
 
   return (
     <Screen>
@@ -154,6 +171,18 @@ export default function EventDetailScreen({ route, navigation }: any) {
             </View>
           </Card>
         </View>
+        {isOverdue && (
+          <View className="mt-4 px-6">
+            <Card className="border border-rose-500/30 bg-rose-500/10">
+              <Text className="text-sm font-semibold text-rose-200">
+                Pago atrasado
+              </Text>
+              <Text className="mt-1 text-xs text-rose-200/80">
+                Pasaron mas de 30 dias desde el ultimo pago.
+              </Text>
+            </Card>
+          </View>
+        )}
 
         {(event.description || event.notes) && (
           <View className="mt-6 px-6">

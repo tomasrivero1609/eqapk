@@ -1,36 +1,69 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Alert } from 'react-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { clientService } from '../../services/clientService';
 import Screen from '../../components/ui/Screen';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 
-export default function CreateClientScreen({ navigation }: any) {
+export default function CreateClientScreen({ navigation, route }: any) {
+  const clientId = route?.params?.clientId as string | undefined;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
 
+  const { data: client } = useQuery({
+    queryKey: ['client', clientId],
+    queryFn: () => clientService.getById(clientId as string),
+    enabled: !!clientId,
+  });
+
+  useEffect(() => {
+    if (!client) {
+      return;
+    }
+    setName(client.name);
+    setEmail(client.email || '');
+    setPhone(client.phone || '');
+    setAddress(client.address || '');
+    setNotes(client.notes || '');
+  }, [client]);
+
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: () =>
-      clientService.create({
-        name,
-        email: email || undefined,
-        phone: phone || undefined,
-        address: address || undefined,
-        notes: notes || undefined,
-      }),
+      clientId
+        ? clientService.update(clientId, {
+            name,
+            email: email || undefined,
+            phone: phone || undefined,
+            address: address || undefined,
+            notes: notes || undefined,
+          })
+        : clientService.create({
+            name,
+            email: email || undefined,
+            phone: phone || undefined,
+            address: address || undefined,
+            notes: notes || undefined,
+          }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      Alert.alert('Listo', 'Cliente creado', [
+      if (clientId) {
+        queryClient.invalidateQueries({ queryKey: ['client', clientId] });
+      }
+      Alert.alert('Listo', clientId ? 'Cliente actualizado' : 'Cliente creado', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.message || 'Error al crear cliente');
+      Alert.alert(
+        'Error',
+        error.response?.data?.message ||
+          (clientId ? 'Error al actualizar cliente' : 'Error al crear cliente'),
+      );
     },
   });
 
@@ -46,9 +79,13 @@ export default function CreateClientScreen({ navigation }: any) {
     <Screen>
       <ScrollView contentContainerClassName="pb-12">
         <View className="px-6 pt-6">
-          <Text className="text-2xl font-bold text-slate-100">Nuevo cliente</Text>
+          <Text className="text-2xl font-bold text-slate-100">
+            {clientId ? 'Editar cliente' : 'Nuevo cliente'}
+          </Text>
           <Text className="mt-2 text-sm text-slate-400">
-            Guarda la informacion basica del cliente.
+            {clientId
+              ? 'Actualiza la informacion del cliente.'
+              : 'Guarda la informacion basica del cliente.'}
           </Text>
         </View>
 
@@ -89,7 +126,7 @@ export default function CreateClientScreen({ navigation }: any) {
 
         <View className="mt-6 px-6">
           <Button
-            label="Guardar cliente"
+            label={clientId ? 'Guardar cambios' : 'Guardar cliente'}
             onPress={handleSubmit}
             loading={mutation.isPending}
           />
