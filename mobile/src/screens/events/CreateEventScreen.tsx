@@ -31,6 +31,17 @@ const formatDateValue = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const parseLocalDate = (value?: string) => {
+  if (!value) {
+    return new Date();
+  }
+  const [year, month, day] = value.split('-').map((part) => parseInt(part, 10));
+  if (!year || !month || !day) {
+    return new Date();
+  }
+  return new Date(year, month - 1, day);
+};
+
 const formatTimeValue = (date: Date) => {
   const hours = `${date.getHours()}`.padStart(2, '0');
   const minutes = `${date.getMinutes()}`.padStart(2, '0');
@@ -193,7 +204,7 @@ export default function CreateEventScreen({ navigation, route }: any) {
       return;
     }
 
-    const parsedDate = new Date(formData.date);
+    const parsedDate = parseLocalDate(formData.date);
     if (Number.isNaN(parsedDate.getTime())) {
       Alert.alert('Error', 'Fecha invalida');
       return;
@@ -386,7 +397,7 @@ export default function CreateEventScreen({ navigation, route }: any) {
           {Platform.OS === 'ios' && showDatePicker && (
             <Card>
               <DateTimePicker
-                value={formData.date ? new Date(formData.date) : new Date()}
+                value={parseLocalDate(formData.date)}
                 mode="date"
                 display="inline"
                 {...pickerStyleProps}
@@ -489,62 +500,142 @@ export default function CreateEventScreen({ navigation, route }: any) {
           <View className="flex-row gap-4">
             <View className="flex-1 space-y-2">
               <Text className="text-sm font-semibold text-slate-300">Invitados</Text>
-              <View className="flex-row items-center justify-between rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3">
-                <TouchableOpacity
-                  onPress={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      guestCount: Math.max(0, prev.guestCount - 1),
-                    }))
-                  }
-                  className="h-10 w-10 items-center justify-center rounded-full bg-slate-800"
-                >
-                  <Text className="text-lg font-semibold text-slate-200">-</Text>
-                </TouchableOpacity>
-                <Text className="text-lg font-semibold text-slate-100">
-                  {formData.guestCount}
-                </Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      guestCount: prev.guestCount + 1,
-                    }))
-                  }
-                  className="h-10 w-10 items-center justify-center rounded-full bg-violet-500/20"
-                >
-                  <Text className="text-lg font-semibold text-violet-200">+</Text>
-                </TouchableOpacity>
+              <View className="rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3">
+                <View className="flex-row items-center justify-between">
+                  <TouchableOpacity
+                    onPress={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        guestCount: Math.max(0, prev.guestCount - 1),
+                      }))
+                    }
+                    className="h-10 w-10 items-center justify-center rounded-full bg-slate-800"
+                  >
+                    <Text className="text-lg font-semibold text-slate-200">-</Text>
+                  </TouchableOpacity>
+                  <Text className="text-lg font-semibold text-slate-100">
+                    {formData.guestCount}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        guestCount: prev.guestCount + 1,
+                      }))
+                    }
+                    className="h-10 w-10 items-center justify-center rounded-full bg-violet-500/20"
+                  >
+                    <Text className="text-lg font-semibold text-violet-200">+</Text>
+                  </TouchableOpacity>
+                </View>
+                <View className="mt-3 flex-row gap-2">
+                  <TouchableOpacity
+                    onPress={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        guestCount: Math.max(0, prev.guestCount - 10),
+                      }))
+                    }
+                    className="flex-1 rounded-full bg-slate-800 py-2"
+                  >
+                    <Text className="text-center text-xs font-semibold text-slate-300">-10</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        guestCount: prev.guestCount + 10,
+                      }))
+                    }
+                    className="flex-1 rounded-full bg-violet-500/20 py-2"
+                  >
+                    <Text className="text-center text-xs font-semibold text-violet-200">+10</Text>
+                  </TouchableOpacity>
+                </View>
+                <View className="mt-3">
+                  <Input
+                    label="Cantidad"
+                    placeholder="100"
+                    keyboardType="number-pad"
+                    value={formData.guestCount.toString()}
+                    onChangeText={(text) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        guestCount: Math.max(0, parseInt(text || '0', 10)),
+                      }))
+                    }
+                  />
+                </View>
               </View>
             </View>
             <View className="flex-1 space-y-2">
               <Text className="text-sm font-semibold text-slate-300">Platos</Text>
-              <View className="flex-row items-center justify-between rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3">
-                <TouchableOpacity
-                  onPress={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      dishCount: Math.max(0, prev.dishCount - 1),
-                    }))
-                  }
-                  className="h-10 w-10 items-center justify-center rounded-full bg-slate-800"
-                >
-                  <Text className="text-lg font-semibold text-slate-200">-</Text>
-                </TouchableOpacity>
-                <Text className="text-lg font-semibold text-slate-100">
-                  {formData.dishCount}
-                </Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      dishCount: prev.dishCount + 1,
-                    }))
-                  }
-                  className="h-10 w-10 items-center justify-center rounded-full bg-violet-500/20"
-                >
-                  <Text className="text-lg font-semibold text-violet-200">+</Text>
-                </TouchableOpacity>
+              <View className="rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3">
+                <View className="flex-row items-center justify-between">
+                  <TouchableOpacity
+                    onPress={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        dishCount: Math.max(0, prev.dishCount - 1),
+                      }))
+                    }
+                    className="h-10 w-10 items-center justify-center rounded-full bg-slate-800"
+                  >
+                    <Text className="text-lg font-semibold text-slate-200">-</Text>
+                  </TouchableOpacity>
+                  <Text className="text-lg font-semibold text-slate-100">
+                    {formData.dishCount}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        dishCount: prev.dishCount + 1,
+                      }))
+                    }
+                    className="h-10 w-10 items-center justify-center rounded-full bg-violet-500/20"
+                  >
+                    <Text className="text-lg font-semibold text-violet-200">+</Text>
+                  </TouchableOpacity>
+                </View>
+                <View className="mt-3 flex-row gap-2">
+                  <TouchableOpacity
+                    onPress={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        dishCount: Math.max(0, prev.dishCount - 10),
+                      }))
+                    }
+                    className="flex-1 rounded-full bg-slate-800 py-2"
+                  >
+                    <Text className="text-center text-xs font-semibold text-slate-300">-10</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        dishCount: prev.dishCount + 10,
+                      }))
+                    }
+                    className="flex-1 rounded-full bg-violet-500/20 py-2"
+                  >
+                    <Text className="text-center text-xs font-semibold text-violet-200">+10</Text>
+                  </TouchableOpacity>
+                </View>
+                <View className="mt-3">
+                  <Input
+                    label="Cantidad"
+                    placeholder="100"
+                    keyboardType="number-pad"
+                    value={formData.dishCount.toString()}
+                    onChangeText={(text) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        dishCount: Math.max(0, parseInt(text || '0', 10)),
+                      }))
+                    }
+                  />
+                </View>
               </View>
             </View>
           </View>
@@ -617,14 +708,14 @@ export default function CreateEventScreen({ navigation, route }: any) {
           />
         </View>
         {Platform.OS !== 'ios' && (
-        <Modal visible={showDatePicker} transparent animationType="fade">
+          <Modal visible={showDatePicker} transparent animationType="fade">
           <View className="flex-1 items-center justify-center bg-black/60 px-6">
             <View className="w-full rounded-3xl bg-slate-900 p-4">
               <Text className="text-base font-semibold text-slate-100">
                 Seleccionar fecha
               </Text>
               <DateTimePicker
-                value={formData.date ? new Date(formData.date) : new Date()}
+                value={parseLocalDate(formData.date)}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 {...pickerStyleProps}

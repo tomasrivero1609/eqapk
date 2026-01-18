@@ -113,10 +113,21 @@ export default function EventsListScreen({ navigation }: any) {
   return (
     <Screen>
       <View className="px-4 pt-4">
-        <Button
-          label="Nuevo evento"
-          onPress={() => navigation.navigate('CreateEvent')}
-        />
+        <View className="flex-row gap-3">
+          <View className="flex-1">
+            <Button
+              label="Nuevo evento"
+              onPress={() => navigation.navigate('CreateEvent')}
+            />
+          </View>
+          <View className="flex-1">
+            <Button
+              label="Calendario"
+              variant="secondary"
+              onPress={() => navigation.navigate('EventsCalendar')}
+            />
+          </View>
+        </View>
       </View>
 
       <FlatList

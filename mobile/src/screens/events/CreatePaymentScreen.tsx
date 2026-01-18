@@ -15,6 +15,14 @@ import { formatCurrency } from '../../utils/format';
 
 const paymentMethods = ['Efectivo', 'Transferencia', 'Tarjeta', 'Otro'];
 
+const parseLocalDate = (value: string) => {
+  const [year, month, day] = value.split('-').map((part) => parseInt(part, 10));
+  if (!year || !month || !day) {
+    return new Date();
+  }
+  return new Date(year, month - 1, day);
+};
+
 export default function CreatePaymentScreen({ navigation, route }: any) {
   const { eventId, currency } = route.params as {
     eventId: string;
@@ -372,7 +380,7 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
           <View className="px-6 pb-4">
             <Card>
               <DateTimePicker
-                value={paidAt ? new Date(paidAt) : new Date()}
+                value={paidAt ? parseLocalDate(paidAt) : new Date()}
                 mode="date"
                 display="inline"
                 {...pickerStyleProps}
@@ -399,9 +407,9 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
                 Fecha de pago
               </Text>
               <DateTimePicker
-                value={paidAt ? new Date(paidAt) : new Date()}
+                value={paidAt ? parseLocalDate(paidAt) : new Date()}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display="spinner"
                 {...pickerStyleProps}
                 onChange={(event, selectedDate) => {
                   if (Platform.OS !== 'ios') {
