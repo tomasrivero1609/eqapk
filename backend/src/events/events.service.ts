@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -88,9 +83,6 @@ export class EventsService {
 
   async findAll(userId: string) {
     return this.prisma.event.findMany({
-      where: {
-        userId,
-      },
       include: {
         client: true,
         menus: {
@@ -151,10 +143,6 @@ export class EventsService {
 
     if (!event) {
       throw new NotFoundException('Evento no encontrado');
-    }
-
-    if (event.userId !== userId) {
-      throw new ForbiddenException('No tienes acceso a este evento');
     }
 
     return event;
