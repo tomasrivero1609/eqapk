@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(ADMIN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+}
+
+enum UserRole {
+  ADMIN
+  SUPERADMIN
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events Event[]
+}
+
+model Event {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  date        DateTime
+  startTime   String
+  endTime     String?
+  guestCount  Int
+  dishCount   Int
+  pricePerDish Float
+  currency    Currency   @default(ARS)
+  totalAmount Float
+  capacity    Int?
+  status      EventStatus @default(PENDING)
+  notes       String?
+  calendarEventId String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  menus     EventMenu[]
+  orders    Order[]
+  orderItems OrderItem[]
+  payments Payment[]
+}
+
+enum EventStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Currency {
+  ARS
+  USD
+}
+
+model Dish {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  category    String?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  menuDishes MenuDish[]
+  orderItems OrderItem[]
+}
+
+model Menu {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  price       Float?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  menuDishes MenuDish[]
+  eventMenus EventMenu[]
+  orderItems OrderItem[]
+}
+
+model MenuDish {
+  id       String @id @default(uuid())
+  quantity Int    @default(1)
+
+  menuId String
+  menu   Menu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  dishId String
+  dish   Dish  @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@unique([menuId, dishId])
+}
+
+model EventMenu {
+  id       String @id @default(uuid())
+  quantity Int    @default(1)
+  price    Float?
+
+  eventId String
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  menuId  String
+  menu    Menu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, menuId])
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  total       Float
+  status      OrderStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  eventId String
+  event   Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  items   OrderItem[]
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+model OrderItem {
+  id       String @id @default(uuid())
+  quantity Int
+  price    Float
+  subtotal Float
+
+  orderId String
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  eventId String
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  dishId  String?
+  dish    Dish? @relation(fields: [dishId], references: [id], onDelete: SetNull)
+  menuId  String?
+  menu    Menu? @relation(fields: [menuId], references: [id], onDelete: SetNull)
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  amount    Float
+  currency  Currency @default(ARS)
+  exchangeRate Float?
+  exchangeRateDate DateTime?
+  platesCovered Int?
+  pricePerDishAtPayment Float?
+  method    String?
+  notes     String?
+  paidAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventId String
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+}
