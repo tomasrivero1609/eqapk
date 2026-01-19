@@ -32,14 +32,6 @@ export default function AdminSummaryScreen() {
     queryFn: () => eventService.getAll(),
   });
 
-  if (isLoading || isLoadingEvents) {
-    return (
-      <Screen className="items-center justify-center">
-        <ActivityIndicator size="large" color="#8B5CF6" />
-      </Screen>
-    );
-  }
-
   const ars = data?.[Currency.ARS] ?? 0;
   const usd = data?.[Currency.USD] ?? 0;
   const now = new Date();
@@ -63,6 +55,14 @@ export default function AdminSummaryScreen() {
       return daysSince(referenceDate) >= 30;
     });
   }, [events]);
+
+  if (isLoading || isLoadingEvents) {
+    return (
+      <Screen className="items-center justify-center">
+        <ActivityIndicator size="large" color="#8B5CF6" />
+      </Screen>
+    );
+  }
 
   return (
     <Screen>

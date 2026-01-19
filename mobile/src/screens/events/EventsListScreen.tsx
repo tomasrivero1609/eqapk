@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { eventService } from '../../services/eventService';
 import { Event, EventStatus } from '../../types';
 import Screen from '../../components/ui/Screen';
@@ -44,6 +45,9 @@ export default function EventsListScreen({ navigation }: any) {
     queryKey: ['events'],
     queryFn: () => eventService.getAll(),
   });
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const isCompact = width < 360;
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -113,28 +117,42 @@ export default function EventsListScreen({ navigation }: any) {
   return (
     <Screen>
       <View className="px-4 pt-4">
-        <View className="flex-row gap-3">
-          <View className="flex-1">
+        {isCompact ? (
+          <View className="space-y-3">
             <Button
               label="Nuevo evento"
               onPress={() => navigation.navigate('CreateEvent')}
             />
-          </View>
-          <View className="flex-1">
             <Button
               label="Calendario"
               variant="secondary"
               onPress={() => navigation.navigate('EventsCalendar')}
             />
           </View>
-        </View>
+        ) : (
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Button
+                label="Nuevo evento"
+                onPress={() => navigation.navigate('CreateEvent')}
+              />
+            </View>
+            <View className="flex-1">
+              <Button
+                label="Calendario"
+                variant="secondary"
+                onPress={() => navigation.navigate('EventsCalendar')}
+              />
+            </View>
+          </View>
+        )}
       </View>
 
       <FlatList
         data={events || []}
         renderItem={renderEvent}
         keyExtractor={(item) => item.id}
-        contentContainerClassName="pb-6"
+        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
         ListEmptyComponent={
           <EmptyState
             title="No hay eventos"

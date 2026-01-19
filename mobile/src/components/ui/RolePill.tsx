@@ -1,17 +1,19 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 
 export default function RolePill() {
   const role = useAuthStore((state) => state.user?.role);
   const navigation = useNavigation();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 360;
 
   if (!role) {
     return null;
   }
 
-  const label = role === 'SUPERADMIN' ? 'Superadmin' : 'Admin';
+  const label = role === 'SUPERADMIN' ? (isCompact ? 'Super' : 'Superadmin') : 'Admin';
 
   const handlePress = () => {
     const parent = navigation.getParent();
@@ -30,7 +32,7 @@ export default function RolePill() {
   return (
     <TouchableOpacity
       onPress={handlePress}
-      className="ml-2 rounded-full bg-violet-600/20 px-3 py-1"
+      className={`ml-2 rounded-full bg-violet-600/20 ${isCompact ? 'px-2 py-1' : 'px-3 py-1'}`}
       accessibilityRole="button"
       accessibilityLabel="Ir al inicio"
       accessibilityHint="Vuelve a la pantalla de inicio"
