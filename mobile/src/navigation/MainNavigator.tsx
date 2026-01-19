@@ -81,7 +81,7 @@ export default function MainNavigator({ route }: any) {
     | undefined;
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const isCompact = width < 520;
+  const isCompact = width < 400;
 
   return (
     <Tab.Navigator

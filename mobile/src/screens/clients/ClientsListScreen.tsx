@@ -16,7 +16,7 @@ export default function ClientsListScreen({ navigation }: any) {
   });
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const isCompact = width < 520;
+  const isCompact = width < 400;
 
   if (isLoading) {
     return (
@@ -53,7 +53,7 @@ export default function ClientsListScreen({ navigation }: any) {
 
   return (
     <Screen>
-      <View className="px-4 pt-4">
+      <View className="px-4 pt-6">
         <Button
           label="Nuevo cliente"
           onPress={() => navigation.navigate('CreateClient')}

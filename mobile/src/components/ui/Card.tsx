@@ -8,7 +8,7 @@ type CardProps = {
 
 export default function Card({ children, className }: CardProps) {
   const { width } = useWindowDimensions();
-  const isCompact = width < 520;
+  const isCompact = width < 400;
 
   return (
     <View

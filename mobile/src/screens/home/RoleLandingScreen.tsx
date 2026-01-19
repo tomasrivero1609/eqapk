@@ -36,7 +36,7 @@ export default function RoleLandingScreen({ navigation }: any) {
   const actions = routesByRole[role];
   const roleLabel = role === UserRole.SUPERADMIN ? 'Superadmin' : 'Admin';
   const { width } = useWindowDimensions();
-  const isCompact = width < 520;
+  const isCompact = width < 400;
   const sectionPadding = isCompact ? 'px-4' : 'px-6';
   const insets = useSafeAreaInsets();
   const { data: dolarOficial, isLoading: isLoadingDolarOficial } = useQuery({

@@ -33,7 +33,7 @@ export default function AdminSummaryScreen() {
     queryFn: () => eventService.getAll(),
   });
   const { width } = useWindowDimensions();
-  const isCompact = width < 520;
+  const isCompact = width < 400;
   const insets = useSafeAreaInsets();
 
   const ars = data?.[Currency.ARS] ?? 0;

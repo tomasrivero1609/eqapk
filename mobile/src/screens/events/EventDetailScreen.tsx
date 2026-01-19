@@ -39,7 +39,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
     staleTime: 5 * 60 * 1000,
   });
   const { width } = useWindowDimensions();
-  const isCompact = width < 520;
+  const isCompact = width < 400;
   const payments = event?.payments || [];
   const visiblePayments = payments.slice(0, visiblePaymentsCount);
 

@@ -47,7 +47,7 @@ export default function EventsListScreen({ navigation }: any) {
   });
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const isCompact = width < 520;
+  const isCompact = width < 400;
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -116,7 +116,7 @@ export default function EventsListScreen({ navigation }: any) {
 
   return (
     <Screen>
-      <View className="px-4 pt-4">
+      <View className="px-4 pt-6">
         {isCompact ? (
           <View className="space-y-3">
             <Button
