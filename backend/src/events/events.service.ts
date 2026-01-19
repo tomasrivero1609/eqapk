@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -37,6 +37,9 @@ export class EventsService {
           childCount * childPrice
         : fallbackDishCount * fallbackPrice;
 
+    const quarterlyAdjustmentPercent =
+      createEventDto.quarterlyAdjustmentPercent ?? 0;
+
     const event = await this.prisma.event.create({
       data: {
         ...createEventDto,
@@ -45,6 +48,8 @@ export class EventsService {
         dishCount,
         guestCount,
         pricePerDish: sectionCount > 0 ? 0 : fallbackPrice,
+        quarterlyAdjustmentPercent,
+        quarterlyAdjustmentEnabled: quarterlyAdjustmentPercent > 0,
         userId,
       },
       include: {
@@ -212,6 +217,10 @@ export class EventsService {
       sectionCount > 0
         ? sectionCount
         : updateEventDto.guestCount ?? event.guestCount;
+    const quarterlyAdjustmentPercent =
+      updateEventDto.quarterlyAdjustmentPercent ??
+      event.quarterlyAdjustmentPercent;
+    const quarterlyAdjustmentEnabled = quarterlyAdjustmentPercent > 0;
 
     const updatedEvent = await this.prisma.event.update({
       where: { id },
@@ -224,6 +233,8 @@ export class EventsService {
           pricePerDish,
           guestCount,
         }),
+        quarterlyAdjustmentPercent,
+        quarterlyAdjustmentEnabled,
       },
       include: {
         client: true,
@@ -261,6 +272,169 @@ export class EventsService {
 
   async checkAvailability(date: string) {
     return this.calendarService.checkDateAvailability(date);
+  }
+
+  async previewQuarterlyAdjustment(id: string, userId: string) {
+    const event = await this.findOne(id, userId);
+    if (!event.quarterlyAdjustmentEnabled || event.quarterlyAdjustmentPercent <= 0) {
+      throw new BadRequestException('El evento no tiene ajuste trimestral configurado');
+    }
+
+    const baseDate = event.lastAdjustmentAt ?? event.createdAt;
+    const nextEligible = new Date(baseDate);
+    nextEligible.setMonth(nextEligible.getMonth() + 3);
+    const eligible = new Date() >= nextEligible;
+
+    const sectionTotal =
+      (event.adultCount || 0) +
+      (event.juvenileCount || 0) +
+      (event.childCount || 0);
+    const sectionData =
+      sectionTotal === 0 && event.dishCount > 0
+        ? {
+            adultCount: event.dishCount,
+            juvenileCount: 0,
+            childCount: 0,
+            adultPrice: event.pricePerDish,
+            juvenilePrice: 0,
+            childPrice: 0,
+          }
+        : {
+            adultCount: event.adultCount,
+            juvenileCount: event.juvenileCount,
+            childCount: event.childCount,
+            adultPrice: event.adultPrice,
+            juvenilePrice: event.juvenilePrice,
+            childPrice: event.childPrice,
+          };
+
+    const coveredTotals = (event.payments || []).reduce(
+      (acc, payment) => {
+        const hasSections =
+          payment.adultCovered != null ||
+          payment.juvenileCovered != null ||
+          payment.childCovered != null;
+        const adult = hasSections ? payment.adultCovered || 0 : payment.platesCovered || 0;
+        const juvenile = hasSections ? payment.juvenileCovered || 0 : 0;
+        const child = hasSections ? payment.childCovered || 0 : 0;
+        acc.adultCovered += adult;
+        acc.juvenileCovered += juvenile;
+        acc.childCovered += child;
+        return acc;
+      },
+      { adultCovered: 0, juvenileCovered: 0, childCovered: 0 },
+    );
+
+    const remaining = {
+      adult: Math.max(0, sectionData.adultCount - coveredTotals.adultCovered),
+      juvenile: Math.max(0, sectionData.juvenileCount - coveredTotals.juvenileCovered),
+      child: Math.max(0, sectionData.childCount - coveredTotals.childCovered),
+    };
+
+    const factor = 1 + event.quarterlyAdjustmentPercent / 100;
+    const newPrices = {
+      adult: Number((sectionData.adultPrice * factor).toFixed(2)),
+      juvenile: Number((sectionData.juvenilePrice * factor).toFixed(2)),
+      child: Number((sectionData.childPrice * factor).toFixed(2)),
+    };
+
+    return {
+      eligible,
+      nextEligibleAt: nextEligible.toISOString(),
+      percent: event.quarterlyAdjustmentPercent,
+      remaining,
+      currentPrices: {
+        adult: sectionData.adultPrice,
+        juvenile: sectionData.juvenilePrice,
+        child: sectionData.childPrice,
+      },
+      newPrices,
+    };
+  }
+
+  async applyQuarterlyAdjustment(id: string, userId: string) {
+    const preview = await this.previewQuarterlyAdjustment(id, userId);
+    if (!preview.eligible) {
+      throw new BadRequestException('Aun no corresponde el ajuste trimestral');
+    }
+
+    const event = await this.findOne(id, userId);
+    const factor = 1 + event.quarterlyAdjustmentPercent / 100;
+    const sectionTotal =
+      (event.adultCount || 0) +
+      (event.juvenileCount || 0) +
+      (event.childCount || 0);
+    const usesSections = sectionTotal > 0;
+
+    const updatedPrices = usesSections
+      ? {
+          adultPrice: Number((event.adultPrice * factor).toFixed(2)),
+          juvenilePrice: Number((event.juvenilePrice * factor).toFixed(2)),
+          childPrice: Number((event.childPrice * factor).toFixed(2)),
+          pricePerDish: event.pricePerDish,
+        }
+      : {
+          adultPrice: event.adultPrice,
+          juvenilePrice: event.juvenilePrice,
+          childPrice: event.childPrice,
+          pricePerDish: Number((event.pricePerDish * factor).toFixed(2)),
+        };
+
+    const coveredTotals = (event.payments || []).reduce(
+      (acc, payment) => {
+        const hasSections =
+          payment.adultCovered != null ||
+          payment.juvenileCovered != null ||
+          payment.childCovered != null;
+        const adult = hasSections ? payment.adultCovered || 0 : payment.platesCovered || 0;
+        const juvenile = hasSections ? payment.juvenileCovered || 0 : 0;
+        const child = hasSections ? payment.childCovered || 0 : 0;
+        const adultPrice =
+          payment.adultPriceAtPayment ?? (usesSections ? event.adultPrice : event.pricePerDish);
+        const juvenilePrice =
+          payment.juvenilePriceAtPayment ?? event.juvenilePrice;
+        const childPrice =
+          payment.childPriceAtPayment ?? event.childPrice;
+        acc.adultCovered += adult;
+        acc.juvenileCovered += juvenile;
+        acc.childCovered += child;
+        acc.coveredValue +=
+          adult * adultPrice + juvenile * juvenilePrice + child * childPrice;
+        return acc;
+      },
+      { adultCovered: 0, juvenileCovered: 0, childCovered: 0, coveredValue: 0 },
+    );
+
+    const remaining = {
+      adult: Math.max(0, event.adultCount - coveredTotals.adultCovered),
+      juvenile: Math.max(0, event.juvenileCount - coveredTotals.juvenileCovered),
+      child: Math.max(0, event.childCount - coveredTotals.childCovered),
+    };
+
+    const remainingValue = usesSections
+      ? remaining.adult * updatedPrices.adultPrice +
+        remaining.juvenile * updatedPrices.juvenilePrice +
+        remaining.child * updatedPrices.childPrice
+      : remaining.adult * updatedPrices.pricePerDish;
+
+    const totalAmount = Number((coveredTotals.coveredValue + remainingValue).toFixed(2));
+
+    const updated = await this.prisma.event.update({
+      where: { id: event.id },
+      data: {
+        ...updatedPrices,
+        totalAmount,
+        lastAdjustmentAt: new Date(),
+      },
+      include: {
+        client: true,
+        payments: {
+          orderBy: { paidAt: 'desc' },
+        },
+      },
+    });
+
+    return { event: updated, preview };
   }
 
   async remove(id: string, userId: string) {

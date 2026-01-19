@@ -29,7 +29,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
   const { eventId } = route.params;
   const [visiblePaymentsCount, setVisiblePaymentsCount] = useState(10);
 
-  const { data: event, isLoading } = useQuery({
+  const { data: event, isLoading, refetch } = useQuery({
     queryKey: ['event', eventId],
     queryFn: () => eventService.getById(eventId),
   });
@@ -42,6 +42,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
   const isCompact = width < 400;
   const payments = event?.payments || [];
   const visiblePayments = payments.slice(0, visiblePaymentsCount);
+  const [isAdjusting, setIsAdjusting] = useState(false);
 
   if (isLoading) {
     return (
@@ -69,24 +70,69 @@ export default function EventDetailScreen({ route, navigation }: any) {
       !payment.exchangeRate &&
       !exchangeRate,
   );
-  const totalCoveredPlates = payments.reduce(
-    (sum: number, payment: Payment) => sum + (payment.platesCovered || 0),
-    0,
+  const sectionTotal =
+    (event.adultCount || 0) +
+    (event.juvenileCount || 0) +
+    (event.childCount || 0);
+  const sectionData =
+    sectionTotal === 0 && event.dishCount > 0
+      ? {
+          adultCount: event.dishCount,
+          juvenileCount: 0,
+          childCount: 0,
+          adultPrice: event.pricePerDish,
+          juvenilePrice: 0,
+          childPrice: 0,
+        }
+      : {
+          adultCount: event.adultCount || 0,
+          juvenileCount: event.juvenileCount || 0,
+          childCount: event.childCount || 0,
+          adultPrice: event.adultPrice || 0,
+          juvenilePrice: event.juvenilePrice || 0,
+          childPrice: event.childPrice || 0,
+        };
+  const coveredTotals = payments.reduce(
+    (acc, payment: Payment) => {
+      const hasSections =
+        payment.adultCovered != null ||
+        payment.juvenileCovered != null ||
+        payment.childCovered != null;
+      const adult = hasSections ? payment.adultCovered || 0 : payment.platesCovered || 0;
+      const juvenile = hasSections ? payment.juvenileCovered || 0 : 0;
+      const child = hasSections ? payment.childCovered || 0 : 0;
+      const adultPrice =
+        payment.adultPriceAtPayment ?? sectionData.adultPrice;
+      const juvenilePrice =
+        payment.juvenilePriceAtPayment ?? sectionData.juvenilePrice;
+      const childPrice =
+        payment.childPriceAtPayment ?? sectionData.childPrice;
+      acc.adultCovered += adult;
+      acc.juvenileCovered += juvenile;
+      acc.childCovered += child;
+      acc.coveredValue +=
+        adult * adultPrice + juvenile * juvenilePrice + child * childPrice;
+      return acc;
+    },
+    { adultCovered: 0, juvenileCovered: 0, childCovered: 0, coveredValue: 0 },
   );
-  const coveredPlatesValue = payments.reduce((sum: number, payment: Payment) => {
-    if (!payment.platesCovered) {
-      return sum;
-    }
-    const price =
-      payment.pricePerDishAtPayment ?? event.pricePerDish;
-    return sum + payment.platesCovered * price;
-  }, 0);
-  const remainingPlates = Math.max(
+  const remainingAdult = Math.max(
     0,
-    event.dishCount - totalCoveredPlates,
+    sectionData.adultCount - coveredTotals.adultCovered,
+  );
+  const remainingJuvenile = Math.max(
+    0,
+    sectionData.juvenileCount - coveredTotals.juvenileCovered,
+  );
+  const remainingChild = Math.max(
+    0,
+    sectionData.childCount - coveredTotals.childCovered,
   );
   const totalDue =
-    coveredPlatesValue + remainingPlates * event.pricePerDish;
+    coveredTotals.coveredValue +
+    remainingAdult * sectionData.adultPrice +
+    remainingJuvenile * sectionData.juvenilePrice +
+    remainingChild * sectionData.childPrice;
   const totalPaid = payments.reduce((sum: number, payment: Payment) => {
     const rate = payment.exchangeRate ?? exchangeRate;
     const converted = convertAmount(
@@ -101,6 +147,64 @@ export default function EventDetailScreen({ route, navigation }: any) {
   const lastPayment = getLastPaymentDate(payments);
   const overdueReference = lastPayment || new Date(event.createdAt);
   const isOverdue = daysSince(overdueReference) >= 30;
+
+  const handleQuarterlyAdjustment = async () => {
+    if (!event) {
+      return;
+    }
+    try {
+      setIsAdjusting(true);
+      const preview = await eventService.previewQuarterlyAdjustment(event.id);
+      if (!preview.eligible) {
+        Alert.alert(
+          'Ajuste no disponible',
+          `Podrás aplicar el ajuste desde ${new Date(preview.nextEligibleAt).toLocaleDateString('es-AR')}.`,
+        );
+        return;
+      }
+      const message = `Plato adulto: ${formatCurrency(preview.currentPrices.adult, event.currency)} → ${formatCurrency(
+        preview.newPrices.adult,
+        event.currency,
+      )}\nPlato juvenil: ${formatCurrency(preview.currentPrices.juvenile, event.currency)} → ${formatCurrency(
+        preview.newPrices.juvenile,
+        event.currency,
+      )}\nPlato infantil: ${formatCurrency(preview.currentPrices.child, event.currency)} → ${formatCurrency(
+        preview.newPrices.child,
+        event.currency,
+      )}`;
+
+      Alert.alert(
+        'Calculo trimestral',
+        message,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Ajustar ahora',
+            style: 'default',
+            onPress: async () => {
+              try {
+                await eventService.applyQuarterlyAdjustment(event.id);
+                await refetch();
+                Alert.alert('Listo', 'Ajuste trimestral aplicado.');
+              } catch (error: any) {
+                Alert.alert(
+                  'Error',
+                  error.response?.data?.message || 'No se pudo aplicar el ajuste.',
+                );
+              }
+            },
+          },
+        ],
+      );
+    } catch (error: any) {
+      Alert.alert(
+        'Error',
+        error.response?.data?.message || 'No se pudo calcular el ajuste.',
+      );
+    } finally {
+      setIsAdjusting(false);
+    }
+  };
 
   return (
     <Screen>
@@ -123,21 +227,30 @@ export default function EventDetailScreen({ route, navigation }: any) {
             <Text className={`${isCompact ? 'text-xs' : 'text-sm'} font-semibold text-slate-400`}>Resumen</Text>
             <View className="mt-4 flex-row justify-between">
               <View>
-                <Text className="text-xs text-slate-400">Invitados</Text>
+                <Text className="text-xs text-slate-400">Adultos</Text>
                 <Text className={`${isCompact ? 'text-base' : 'text-lg'} font-semibold text-slate-100`}>
-                  {event.guestCount}
+                  {sectionData.adultCount}
+                </Text>
+                <Text className="text-xs text-slate-500">
+                  {formatCurrency(sectionData.adultPrice, event.currency)}
                 </Text>
               </View>
               <View>
-                <Text className="text-xs text-slate-400">Platos</Text>
+                <Text className="text-xs text-slate-400">Juveniles</Text>
                 <Text className={`${isCompact ? 'text-base' : 'text-lg'} font-semibold text-slate-100`}>
-                  {event.dishCount}
+                  {sectionData.juvenileCount}
+                </Text>
+                <Text className="text-xs text-slate-500">
+                  {formatCurrency(sectionData.juvenilePrice, event.currency)}
                 </Text>
               </View>
               <View>
-                <Text className="text-xs text-slate-400">Precio x plato</Text>
+                <Text className="text-xs text-slate-400">Infantiles</Text>
                 <Text className={`${isCompact ? 'text-base' : 'text-lg'} font-semibold text-slate-100`}>
-                  {formatCurrency(event.pricePerDish, event.currency)}
+                  {sectionData.childCount}
+                </Text>
+                <Text className="text-xs text-slate-500">
+                  {formatCurrency(sectionData.childPrice, event.currency)}
                 </Text>
               </View>
             </View>
@@ -160,9 +273,12 @@ export default function EventDetailScreen({ route, navigation }: any) {
                   {formatCurrency(balance, event.currency)}
                 </Text>
               </View>
-              {totalCoveredPlates > 0 && (
+              {(coveredTotals.adultCovered > 0 ||
+                coveredTotals.juvenileCovered > 0 ||
+                coveredTotals.childCovered > 0) && (
                 <Text className="mt-3 text-xs text-slate-500">
-                  Platos cubiertos: {totalCoveredPlates} de {event.dishCount}
+                  Platos cubiertos: {coveredTotals.adultCovered} A /{' '}
+                  {coveredTotals.juvenileCovered} J / {coveredTotals.childCovered} I
                 </Text>
               )}
               {hasMixedCurrencies && hasMissingRates && (
@@ -279,7 +395,15 @@ export default function EventDetailScreen({ route, navigation }: any) {
                           {new Date(payment.exchangeRateDate).toLocaleDateString('es-AR')}
                         </Text>
                       ) : null}
-                      {payment.platesCovered ? (
+                      {(payment.adultCovered ||
+                        payment.juvenileCovered ||
+                        payment.childCovered) ? (
+                        <Text className="mt-1 text-xs text-slate-500">
+                          Platos cubiertos: {payment.adultCovered || 0} A /{' '}
+                          {payment.juvenileCovered || 0} J /{' '}
+                          {payment.childCovered || 0} I
+                        </Text>
+                      ) : payment.platesCovered ? (
                         <Text className="mt-1 text-xs text-slate-500">
                           Platos cubiertos: {payment.platesCovered}
                         </Text>
@@ -320,6 +444,35 @@ export default function EventDetailScreen({ route, navigation }: any) {
             onPress={() => navigation.navigate('CreateEvent', { eventId: event.id })}
           />
         </View>
+
+        {event.quarterlyAdjustmentEnabled &&
+          event.quarterlyAdjustmentPercent > 0 && (
+            <View className="mt-3 px-6">
+              <Button
+                label={`Calculo trimestral (${event.quarterlyAdjustmentPercent}%)`}
+                variant="secondary"
+                onPress={handleQuarterlyAdjustment}
+                loading={isAdjusting}
+              />
+              <Text className="mt-2 text-xs text-slate-500">
+                Ultimo ajuste:{' '}
+                {event.lastAdjustmentAt
+                  ? new Date(event.lastAdjustmentAt).toLocaleDateString('es-AR')
+                  : new Date(event.createdAt).toLocaleDateString('es-AR')}
+              </Text>
+              <Text className="mt-1 text-xs text-slate-500">
+                Proximo ajuste disponible desde:{' '}
+                {(() => {
+                  const base = event.lastAdjustmentAt
+                    ? new Date(event.lastAdjustmentAt)
+                    : new Date(event.createdAt);
+                  const next = new Date(base);
+                  next.setMonth(next.getMonth() + 3);
+                  return next.toLocaleDateString('es-AR');
+                })()}
+              </Text>
+            </View>
+          )}
 
         <View className="mt-4 px-6">
           <Button

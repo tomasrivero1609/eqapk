@@ -34,4 +34,20 @@ export const eventService = {
     );
     return response.data;
   },
+
+  async previewQuarterlyAdjustment(id: string) {
+    const response = await api.post(
+      `${API_ENDPOINTS.EVENTS}/${id}/quarterly-adjustment`,
+      { apply: false },
+    );
+    return response.data;
+  },
+
+  async applyQuarterlyAdjustment(id: string) {
+    const response = await api.post(
+      `${API_ENDPOINTS.EVENTS}/${id}/quarterly-adjustment`,
+      { apply: true },
+    );
+    return response.data;
+  },
 };

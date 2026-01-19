@@ -61,6 +61,19 @@ const parseTimeValue = (time?: string) => {
   return base;
 };
 
+const normalizeDecimalInput = (value: string) => {
+  const cleaned = value.replace(',', '.').replace(/[^0-9.]/g, '');
+  const parts = cleaned.split('.');
+  if (parts.length <= 1) {
+    return cleaned.replace(/^0+(?=\d)/, '');
+  }
+  return `${parts[0].replace(/^0+(?=\d)/, '')}.${parts.slice(1).join('')}`;
+};
+
+const normalizeIntInput = (value: string) => {
+  return value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+};
+
 export default function CreateEventScreen({ navigation, route }: any) {
   const eventId = route.params?.eventId as string | undefined;
   const selectedClient = route.params?.selectedClient;
@@ -88,9 +101,16 @@ export default function CreateEventScreen({ navigation, route }: any) {
     date: '',
     startTime: '',
     endTime: '',
-    guestCount: 1,
-    dishCount: 1,
+    guestCount: 0,
+    dishCount: 0,
     pricePerDish: 0,
+    adultCount: 0,
+    juvenileCount: 0,
+    childCount: 0,
+    adultPrice: 0,
+    juvenilePrice: 0,
+    childPrice: 0,
+    quarterlyAdjustmentPercent: 0,
     currency: Currency.ARS,
     notes: '',
     clientId: undefined,
@@ -116,15 +136,30 @@ export default function CreateEventScreen({ navigation, route }: any) {
 
   useEffect(() => {
     if (event) {
+      const sectionCount =
+        (event.adultCount || 0) +
+        (event.juvenileCount || 0) +
+        (event.childCount || 0);
+      const fallbackAdultCount =
+        sectionCount === 0 ? event.dishCount : event.adultCount;
+      const fallbackAdultPrice =
+        sectionCount === 0 ? event.pricePerDish : event.adultPrice;
       const mapped: CreateEventDto = {
         name: event.name,
         description: event.description || '',
         date: event.date.slice(0, 10),
         startTime: event.startTime,
         endTime: event.endTime || '',
-        guestCount: event.guestCount,
+        guestCount: sectionCount > 0 ? sectionCount : event.guestCount,
         dishCount: event.dishCount,
         pricePerDish: event.pricePerDish,
+        adultCount: fallbackAdultCount || 0,
+        juvenileCount: event.juvenileCount || 0,
+        childCount: event.childCount || 0,
+        adultPrice: fallbackAdultPrice || 0,
+        juvenilePrice: event.juvenilePrice || 0,
+        childPrice: event.childPrice || 0,
+        quarterlyAdjustmentPercent: event.quarterlyAdjustmentPercent || 0,
         currency: event.currency,
         notes: event.notes || '',
         clientId: event.clientId,
@@ -163,7 +198,14 @@ export default function CreateEventScreen({ navigation, route }: any) {
     return client ? client.name : 'Cliente no encontrado';
   }, [formData.clientId, clients]);
 
-  const totalAmount = formData.dishCount * formData.pricePerDish;
+  const totalGuests =
+    (formData.adultCount || 0) +
+    (formData.juvenileCount || 0) +
+    (formData.childCount || 0);
+  const totalAmount =
+    (formData.adultCount || 0) * (formData.adultPrice || 0) +
+    (formData.juvenileCount || 0) * (formData.juvenilePrice || 0) +
+    (formData.childCount || 0) * (formData.childPrice || 0);
   const { data: dolarOficial, isLoading: isLoadingDolarOficial } = useQuery({
     queryKey: ['dolar-oficial'],
     queryFn: () => dolarService.getOficial(),
@@ -228,21 +270,25 @@ export default function CreateEventScreen({ navigation, route }: any) {
     }
 
     if (
-      !Number.isFinite(formData.dishCount) ||
-      !Number.isFinite(formData.guestCount) ||
-      !Number.isFinite(formData.pricePerDish)
+      !Number.isFinite(totalGuests) ||
+      !Number.isFinite(formData.adultPrice) ||
+      !Number.isFinite(formData.juvenilePrice) ||
+      !Number.isFinite(formData.childPrice)
     ) {
       Alert.alert('Error', 'Revisa los valores numericos');
       return;
     }
 
-    if (formData.dishCount <= 0 || formData.guestCount <= 0) {
-      Alert.alert('Error', 'Invitados y platos deben ser mayores a 0');
+    if (totalGuests <= 0) {
+      Alert.alert('Error', 'Agrega al menos una cantidad de platos');
       return;
     }
 
     const payload: CreateEventDto = {
       ...formData,
+      guestCount: totalGuests,
+      dishCount: totalGuests,
+      pricePerDish: 0,
       description: formData.description?.trim() || undefined,
       notes: formData.notes?.trim() || undefined,
       endTime: formData.endTime?.trim() || undefined,
@@ -497,191 +543,146 @@ export default function CreateEventScreen({ navigation, route }: any) {
             </Card>
           )}
 
-          <View className="flex-row gap-4">
-            <View className="flex-1 space-y-2">
-              <Text className="text-sm font-semibold text-slate-300">Invitados</Text>
-              <View className="rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3">
-                <View className="flex-row items-center justify-between">
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        guestCount: Math.max(0, prev.guestCount - 1),
-                      }))
-                    }
-                    className="h-10 w-10 items-center justify-center rounded-full bg-slate-800"
-                  >
-                    <Text className="text-lg font-semibold text-slate-200">-</Text>
-                  </TouchableOpacity>
-                  <Text className="text-lg font-semibold text-slate-100">
-                    {formData.guestCount}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        guestCount: prev.guestCount + 1,
-                      }))
-                    }
-                    className="h-10 w-10 items-center justify-center rounded-full bg-violet-500/20"
-                  >
-                    <Text className="text-lg font-semibold text-violet-200">+</Text>
-                  </TouchableOpacity>
-                </View>
-                <View className="mt-3 flex-row gap-2">
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        guestCount: Math.max(0, prev.guestCount - 10),
-                      }))
-                    }
-                    className="flex-1 rounded-full bg-slate-800 py-2"
-                  >
-                    <Text className="text-center text-xs font-semibold text-slate-300">-10</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        guestCount: prev.guestCount + 10,
-                      }))
-                    }
-                    className="flex-1 rounded-full bg-violet-500/20 py-2"
-                  >
-                    <Text className="text-center text-xs font-semibold text-violet-200">+10</Text>
-                  </TouchableOpacity>
-                </View>
-                <View className="mt-3">
+          <View className="space-y-4">
+            <Text className="text-sm font-semibold text-slate-300">
+              Platos por sección
+            </Text>
+            <Card>
+              <Text className="text-sm font-semibold text-slate-100">Adultos</Text>
+              <View className="mt-3 flex-row gap-3">
+                <View className="flex-1">
                   <Input
                     label="Cantidad"
-                    placeholder="100"
+                    placeholder="50"
                     keyboardType="number-pad"
-                    value={formData.guestCount.toString()}
+                    value={formData.adultCount?.toString() || '0'}
                     onChangeText={(text) =>
                       setFormData((prev) => ({
                         ...prev,
-                        guestCount: Math.max(0, parseInt(text || '0', 10)),
+                        adultCount: Math.max(0, parseInt(normalizeIntInput(text) || '0', 10)),
+                      }))
+                    }
+                  />
+                </View>
+                <View className="flex-1">
+                  <Input
+                    label="Precio"
+                    placeholder="450"
+                    keyboardType="decimal-pad"
+                    value={formData.adultPrice?.toString() || '0'}
+                    onChangeText={(text) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        adultPrice: text ? parseFloat(normalizeDecimalInput(text)) : 0,
                       }))
                     }
                   />
                 </View>
               </View>
-            </View>
-            <View className="flex-1 space-y-2">
-              <Text className="text-sm font-semibold text-slate-300">Platos</Text>
-              <View className="rounded-2xl border border-slate-700 bg-slate-900 px-3 py-3">
-                <View className="flex-row items-center justify-between">
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        dishCount: Math.max(0, prev.dishCount - 1),
-                      }))
-                    }
-                    className="h-10 w-10 items-center justify-center rounded-full bg-slate-800"
-                  >
-                    <Text className="text-lg font-semibold text-slate-200">-</Text>
-                  </TouchableOpacity>
-                  <Text className="text-lg font-semibold text-slate-100">
-                    {formData.dishCount}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        dishCount: prev.dishCount + 1,
-                      }))
-                    }
-                    className="h-10 w-10 items-center justify-center rounded-full bg-violet-500/20"
-                  >
-                    <Text className="text-lg font-semibold text-violet-200">+</Text>
-                  </TouchableOpacity>
-                </View>
-                <View className="mt-3 flex-row gap-2">
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        dishCount: Math.max(0, prev.dishCount - 10),
-                      }))
-                    }
-                    className="flex-1 rounded-full bg-slate-800 py-2"
-                  >
-                    <Text className="text-center text-xs font-semibold text-slate-300">-10</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        dishCount: prev.dishCount + 10,
-                      }))
-                    }
-                    className="flex-1 rounded-full bg-violet-500/20 py-2"
-                  >
-                    <Text className="text-center text-xs font-semibold text-violet-200">+10</Text>
-                  </TouchableOpacity>
-                </View>
-                <View className="mt-3">
+            </Card>
+            <Card>
+              <Text className="text-sm font-semibold text-slate-100">Juveniles</Text>
+              <View className="mt-3 flex-row gap-3">
+                <View className="flex-1">
                   <Input
                     label="Cantidad"
-                    placeholder="100"
+                    placeholder="25"
                     keyboardType="number-pad"
-                    value={formData.dishCount.toString()}
+                    value={formData.juvenileCount?.toString() || '0'}
                     onChangeText={(text) =>
                       setFormData((prev) => ({
                         ...prev,
-                        dishCount: Math.max(0, parseInt(text || '0', 10)),
+                        juvenileCount: Math.max(0, parseInt(normalizeIntInput(text) || '0', 10)),
+                      }))
+                    }
+                  />
+                </View>
+                <View className="flex-1">
+                  <Input
+                    label="Precio"
+                    placeholder="350"
+                    keyboardType="decimal-pad"
+                    value={formData.juvenilePrice?.toString() || '0'}
+                    onChangeText={(text) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        juvenilePrice: text ? parseFloat(normalizeDecimalInput(text)) : 0,
                       }))
                     }
                   />
                 </View>
               </View>
-            </View>
+            </Card>
+            <Card>
+              <Text className="text-sm font-semibold text-slate-100">Infantiles</Text>
+              <View className="mt-3 flex-row gap-3">
+                <View className="flex-1">
+                  <Input
+                    label="Cantidad"
+                    placeholder="25"
+                    keyboardType="number-pad"
+                    value={formData.childCount?.toString() || '0'}
+                    onChangeText={(text) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        childCount: Math.max(0, parseInt(normalizeIntInput(text) || '0', 10)),
+                      }))
+                    }
+                  />
+                </View>
+                <View className="flex-1">
+                  <Input
+                    label="Precio"
+                    placeholder="250"
+                    keyboardType="decimal-pad"
+                    value={formData.childPrice?.toString() || '0'}
+                    onChangeText={(text) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        childPrice: text ? parseFloat(normalizeDecimalInput(text)) : 0,
+                      }))
+                    }
+                  />
+                </View>
+              </View>
+            </Card>
           </View>
 
-          <View className="flex-row gap-4">
-            <View className="flex-1">
-              <Input
-                label="Precio por plato"
-                placeholder="450"
-                value={formData.pricePerDish.toString()}
-                keyboardType="decimal-pad"
-                onChangeText={(text) =>
-                  setFormData({
-                    ...formData,
-                    pricePerDish: text ? parseFloat(text) : 0,
-                  })
-                }
-              />
-            </View>
-            <View className="flex-1">
-              <Text className="text-sm font-semibold text-slate-300 mb-2">
-                Moneda
-              </Text>
-              <View className="flex-row gap-2">
-                {currencyOptions.map((currency) => (
-                  <TouchableOpacity
-                    key={currency}
-                    onPress={() => setFormData({ ...formData, currency })}
-                    className={`flex-1 rounded-2xl border px-3 py-4 ${
+          <Card>
+            <Text className="text-sm font-semibold text-slate-400">
+              Total de invitados
+            </Text>
+            <Text className="mt-1 text-xl font-bold text-slate-100">
+              {totalGuests}
+            </Text>
+          </Card>
+
+          <View className="space-y-2">
+            <Text className="text-sm font-semibold text-slate-300 mb-2">
+              Moneda
+            </Text>
+            <View className="flex-row gap-2">
+              {currencyOptions.map((currency) => (
+                <TouchableOpacity
+                  key={currency}
+                  onPress={() => setFormData({ ...formData, currency })}
+                  className={`flex-1 rounded-2xl border px-3 py-4 ${
+                    formData.currency === currency
+                      ? 'border-violet-400 bg-violet-500/20'
+                      : 'border-slate-700 bg-slate-900'
+                  }`}
+                >
+                  <Text
+                    className={`text-center text-sm font-semibold ${
                       formData.currency === currency
-                        ? 'border-violet-400 bg-violet-500/20'
-                        : 'border-slate-700 bg-slate-900'
+                        ? 'text-violet-200'
+                        : 'text-slate-300'
                     }`}
                   >
-                    <Text
-                      className={`text-center text-sm font-semibold ${
-                        formData.currency === currency
-                          ? 'text-violet-200'
-                          : 'text-slate-300'
-                      }`}
-                    >
-                      {currency === Currency.ARS ? 'ARS' : 'USD'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                    {currency === Currency.ARS ? 'ARS' : 'USD'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
 
@@ -690,6 +691,31 @@ export default function CreateEventScreen({ navigation, route }: any) {
             <Text className="mt-1 text-xl font-bold text-slate-100">
               {formatCurrency(totalAmount, formData.currency || 'ARS')}
             </Text>
+          </Card>
+
+          <Card>
+            <Text className="text-sm font-semibold text-slate-300">
+              Ajuste trimestral
+            </Text>
+            <Text className="mt-1 text-xs text-slate-400">
+              Se aplica cada 3 meses sobre los platos restantes.
+            </Text>
+            <View className="mt-3">
+              <Input
+                label="Porcentaje (%)"
+                placeholder="3"
+                value={formData.quarterlyAdjustmentPercent?.toString() || '0'}
+                keyboardType="decimal-pad"
+                onChangeText={(text) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    quarterlyAdjustmentPercent: text
+                      ? parseFloat(normalizeDecimalInput(text))
+                      : 0,
+                  }))
+                }
+              />
+            </View>
           </Card>
 
           <Input

@@ -35,6 +35,10 @@ export default function PaymentDetailScreen({ route }: any) {
   const rateDateText = payment.exchangeRateDate
     ? new Date(payment.exchangeRateDate).toLocaleDateString('es-AR')
     : null;
+  const hasSectionCovered =
+    (payment.adultCovered || 0) > 0 ||
+    (payment.juvenileCovered || 0) > 0 ||
+    (payment.childCovered || 0) > 0;
 
   const handleShareReceipt = async () => {
     try {
@@ -96,7 +100,28 @@ export default function PaymentDetailScreen({ route }: any) {
                 : ''
             }
             ${
-              payment.platesCovered
+              hasSectionCovered
+                ? `<div class="section">
+                    <div class="label">Platos cubiertos</div>
+                    <div class="value">${payment.adultCovered || 0} Adultos / ${
+                    payment.juvenileCovered || 0
+                  } Juveniles / ${payment.childCovered || 0} Infantiles</div>
+                    ${
+                      payment.adultPriceAtPayment || payment.juvenilePriceAtPayment || payment.childPriceAtPayment
+                        ? `<div class="muted">Precios al pago: ${formatCurrency(
+                            payment.adultPriceAtPayment || 0,
+                            eventCurrency,
+                          )} A · ${formatCurrency(
+                            payment.juvenilePriceAtPayment || 0,
+                            eventCurrency,
+                          )} J · ${formatCurrency(
+                            payment.childPriceAtPayment || 0,
+                            eventCurrency,
+                          )} I</div>`
+                        : ''
+                    }
+                  </div>`
+                : payment.platesCovered
                 ? `<div class="section">
                     <div class="label">Platos cubiertos</div>
                     <div class="value">${payment.platesCovered}</div>
@@ -181,10 +206,27 @@ export default function PaymentDetailScreen({ route }: any) {
           </Card>
         )}
 
-        {(payment.platesCovered || payment.method || payment.notes) && (
+        {(payment.platesCovered || hasSectionCovered || payment.method || payment.notes) && (
           <Card>
             <Text className="text-xs font-semibold text-slate-400">Detalles</Text>
-            {payment.platesCovered ? (
+            {hasSectionCovered ? (
+              <View className="mt-3">
+                <Text className="text-xs font-semibold text-slate-400">
+                  Platos cubiertos
+                </Text>
+                <Text className="mt-1 text-sm text-slate-300">
+                  {payment.adultCovered || 0} Adultos / {payment.juvenileCovered || 0} Juveniles /{' '}
+                  {payment.childCovered || 0} Infantiles
+                </Text>
+                {payment.adultPriceAtPayment || payment.juvenilePriceAtPayment || payment.childPriceAtPayment ? (
+                  <Text className="mt-1 text-xs text-slate-500">
+                    Precios al pago {formatCurrency(payment.adultPriceAtPayment || 0, eventCurrency)} A ·{' '}
+                    {formatCurrency(payment.juvenilePriceAtPayment || 0, eventCurrency)} J ·{' '}
+                    {formatCurrency(payment.childPriceAtPayment || 0, eventCurrency)} I
+                  </Text>
+                ) : null}
+              </View>
+            ) : payment.platesCovered ? (
               <View className="mt-3">
                 <Text className="text-xs font-semibold text-slate-400">
                   Platos cubiertos
@@ -201,7 +243,7 @@ export default function PaymentDetailScreen({ route }: any) {
               </View>
             ) : null}
             {payment.method ? (
-              <View className={payment.platesCovered ? 'mt-4' : 'mt-3'}>
+              <View className={payment.platesCovered || hasSectionCovered ? 'mt-4' : 'mt-3'}>
                 <Text className="text-xs font-semibold text-slate-400">Metodo</Text>
                 <Text className="mt-1 text-sm text-slate-300">{payment.method}</Text>
               </View>

@@ -91,4 +91,9 @@ export class CreateEventDto {
   @IsOptional()
   @IsString()
   clientId?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  quarterlyAdjustmentPercent?: number;
 }

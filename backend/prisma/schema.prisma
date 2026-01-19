@@ -52,6 +52,9 @@ model Event {
   adultPrice  Float      @default(0)
   juvenilePrice Float    @default(0)
   childPrice  Float      @default(0)
+  quarterlyAdjustmentPercent Float @default(0)
+  quarterlyAdjustmentEnabled Boolean @default(false)
+  lastAdjustmentAt DateTime?
   currency    Currency   @default(ARS)
   totalAmount Float
   capacity    Int?

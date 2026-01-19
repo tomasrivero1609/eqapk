@@ -53,6 +53,18 @@ export class EventsController {
     return this.eventsService.update(id, user.id, updateEventDto);
   }
 
+  @Post(':id/quarterly-adjustment')
+  quarterlyAdjustment(
+    @Param('id') id: string,
+    @GetUser() user: any,
+    @Body('apply') apply?: boolean,
+  ) {
+    if (apply) {
+      return this.eventsService.applyQuarterlyAdjustment(id, user.id);
+    }
+    return this.eventsService.previewQuarterlyAdjustment(id, user.id);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string, @GetUser() user: any) {
     return this.eventsService.remove(id, user.id);
