@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import Screen from '../../components/ui/Screen';
@@ -35,6 +35,8 @@ export default function RoleLandingScreen({ navigation }: any) {
   const logout = useAuthStore((state) => state.logout);
   const actions = routesByRole[role];
   const roleLabel = role === UserRole.SUPERADMIN ? 'Superadmin' : 'Admin';
+  const { width } = useWindowDimensions();
+  const isCompact = width < 360;
   const { data: dolarOficial, isLoading: isLoadingDolarOficial } = useQuery({
     queryKey: ['dolar-oficial'],
     queryFn: () => dolarService.getOficial(),
@@ -50,9 +52,12 @@ export default function RoleLandingScreen({ navigation }: any) {
     <Screen>
       <SafeAreaView className="flex-1">
         <View className="px-6 pt-6">
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-3xl font-semibold text-white">
+          <View className={isCompact ? 'flex-col' : 'flex-row items-center justify-between'}>
+            <View className={isCompact ? '' : 'flex-1 pr-3'}>
+              <Text
+                className={isCompact ? 'text-2xl font-semibold text-white' : 'text-3xl font-semibold text-white'}
+                numberOfLines={2}
+              >
                 Bienvenido, {name}
               </Text>
               <Text className="mt-2 text-sm text-slate-300">
@@ -61,7 +66,7 @@ export default function RoleLandingScreen({ navigation }: any) {
             </View>
             <TouchableOpacity
               onPress={logout}
-              className="rounded-full bg-slate-800 px-4 py-2"
+              className={isCompact ? 'mt-3 self-start rounded-full bg-slate-800 px-4 py-2' : 'rounded-full bg-slate-800 px-4 py-2'}
             >
               <Text className="text-xs font-semibold text-slate-200">Salir</Text>
             </TouchableOpacity>
@@ -127,14 +132,14 @@ export default function RoleLandingScreen({ navigation }: any) {
           </Card>
         </View>
 
-        <View className="mt-6 px-6 flex-row flex-wrap gap-4">
+        <View className={`mt-6 px-6 flex-row flex-wrap ${isCompact ? 'gap-3' : 'gap-4'}`}>
           {actions.map((item) => (
             <TouchableOpacity
               key={item.key}
               onPress={() => navigation.replace('MainTabs', { initialTab: item.key })}
-              className="w-[48%]"
+              className={isCompact ? 'w-full' : 'w-[48%]'}
             >
-              <Card className="h-28 justify-between">
+              <Card className={isCompact ? 'h-24 justify-between' : 'h-28 justify-between'}>
                 <Text className="text-base font-semibold text-slate-100">
                   {item.label}
                 </Text>
@@ -146,7 +151,7 @@ export default function RoleLandingScreen({ navigation }: any) {
           ))}
         </View>
 
-        <View className="mt-6 px-6 pb-8">
+        <View className={`mt-6 px-6 ${isCompact ? 'pb-20' : 'pb-8'}`}>
           <Button
             label="Ir al panel"
             onPress={() => navigation.replace('MainTabs', { initialTab: 'Events' })}
