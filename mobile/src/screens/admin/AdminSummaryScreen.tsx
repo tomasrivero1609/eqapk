@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, ScrollView, useWindowDimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { paymentService } from '../../services/paymentService';
 import { eventService } from '../../services/eventService';
 import Screen from '../../components/ui/Screen';
@@ -31,6 +32,9 @@ export default function AdminSummaryScreen() {
     queryKey: ['events'],
     queryFn: () => eventService.getAll(),
   });
+  const { width } = useWindowDimensions();
+  const isCompact = width < 520;
+  const insets = useSafeAreaInsets();
 
   const ars = data?.[Currency.ARS] ?? 0;
   const usd = data?.[Currency.USD] ?? 0;
@@ -66,47 +70,53 @@ export default function AdminSummaryScreen() {
 
   return (
     <Screen>
-      <View className="px-6 pt-6">
-        <Text className="text-2xl font-bold text-slate-100">
-          Resumen de ingresos
-        </Text>
-        <Text className="mt-2 text-sm text-slate-400">
-          Totales globales en pesos y dolares.
-        </Text>
-      </View>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: insets.bottom + 140 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className={`${isCompact ? 'px-4 pt-4' : 'px-6 pt-6'}`}>
+          <Text className={`${isCompact ? 'text-xl' : 'text-2xl'} font-bold text-slate-100`}>
+            Resumen de ingresos
+          </Text>
+          <Text className="mt-2 text-sm text-slate-400">
+            Totales globales en pesos y dolares.
+          </Text>
+        </View>
 
-      <View className="mt-6 px-6 space-y-4">
-        <Card>
-          <Text className="text-sm text-slate-400">Total ARS</Text>
-          <Text className="mt-2 text-2xl font-bold text-slate-100">
-            {formatCurrency(ars, 'ARS')}
-          </Text>
-        </Card>
-        <Card>
-          <Text className="text-sm text-slate-400">Total USD</Text>
-          <Text className="mt-2 text-2xl font-bold text-slate-100">
-            {formatCurrency(usd, 'USD')}
-          </Text>
-        </Card>
-        <Card>
-          <Text className="text-sm text-slate-400">Eventos del mes</Text>
-          <Text className="mt-2 text-2xl font-bold text-slate-100">
-            {monthEvents.length}
-          </Text>
-        </Card>
-        <Card>
-          <Text className="text-sm text-slate-400">Proximos 7 dias</Text>
-          <Text className="mt-2 text-2xl font-bold text-slate-100">
-            {upcomingEvents.length}
-          </Text>
-        </Card>
-        <Card>
-          <Text className="text-sm text-slate-400">Pagos atrasados</Text>
-          <Text className="mt-2 text-2xl font-bold text-rose-300">
-            {overdueEvents.length}
-          </Text>
-        </Card>
-      </View>
+        <View className={`${isCompact ? 'mt-4 px-4' : 'mt-6 px-6'} space-y-4`}>
+          <Card>
+            <Text className="text-sm text-slate-400">Total ARS</Text>
+            <Text className={`${isCompact ? 'text-xl' : 'text-2xl'} mt-2 font-bold text-slate-100`}>
+              {formatCurrency(ars, 'ARS')}
+            </Text>
+          </Card>
+          <Card>
+            <Text className="text-sm text-slate-400">Total USD</Text>
+            <Text className={`${isCompact ? 'text-xl' : 'text-2xl'} mt-2 font-bold text-slate-100`}>
+              {formatCurrency(usd, 'USD')}
+            </Text>
+          </Card>
+          <Card>
+            <Text className="text-sm text-slate-400">Eventos del mes</Text>
+            <Text className={`${isCompact ? 'text-xl' : 'text-2xl'} mt-2 font-bold text-slate-100`}>
+              {monthEvents.length}
+            </Text>
+          </Card>
+          <Card>
+            <Text className="text-sm text-slate-400">Proximos 7 dias</Text>
+            <Text className={`${isCompact ? 'text-xl' : 'text-2xl'} mt-2 font-bold text-slate-100`}>
+              {upcomingEvents.length}
+            </Text>
+          </Card>
+          <Card>
+            <Text className="text-sm text-slate-400">Pagos atrasados</Text>
+            <Text className={`${isCompact ? 'text-xl' : 'text-2xl'} mt-2 font-bold text-rose-300`}>
+              {overdueEvents.length}
+            </Text>
+          </Card>
+        </View>
+      </ScrollView>
     </Screen>
   );
 }

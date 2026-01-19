@@ -76,7 +76,7 @@ export default function EventsListScreen({ navigation }: any) {
     >
       <Card>
         <View className="flex-row items-start justify-between">
-          <Text className="text-lg font-bold text-slate-100 flex-1 pr-2">
+          <Text className={`${isCompact ? 'text-base' : 'text-lg'} font-bold text-slate-100 flex-1 pr-2`}>
             {item.name}
           </Text>
           <View className="items-end space-y-2">
@@ -86,25 +86,25 @@ export default function EventsListScreen({ navigation }: any) {
             )}
           </View>
         </View>
-        <Text className="mt-2 text-sm text-slate-400">
+        <Text className={`${isCompact ? 'text-xs' : 'text-sm'} mt-2 text-slate-400`}>
           {new Date(item.date).toLocaleDateString('es-AR')}
         </Text>
         <View className="mt-3 flex-row items-center justify-between">
           <View>
             <Text className="text-xs text-slate-400">Platos</Text>
-            <Text className="text-base font-semibold text-slate-100">
+            <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-slate-100`}>
               {item.dishCount}
             </Text>
           </View>
           <View>
             <Text className="text-xs text-slate-400">Invitados</Text>
-            <Text className="text-base font-semibold text-slate-100">
+            <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-slate-100`}>
               {item.guestCount}
             </Text>
           </View>
           <View>
             <Text className="text-xs text-slate-400">Total</Text>
-            <Text className="text-base font-semibold text-slate-100">
+            <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-slate-100`}>
               {formatCurrency(item.totalAmount, item.currency)}
             </Text>
           </View>

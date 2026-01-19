@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert, useWindowDimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { eventService } from '../../services/eventService';
 import { dolarService } from '../../services/dolarService';
@@ -38,6 +38,8 @@ export default function EventDetailScreen({ route, navigation }: any) {
     queryFn: () => dolarService.getBlue(),
     staleTime: 5 * 60 * 1000,
   });
+  const { width } = useWindowDimensions();
+  const isCompact = width < 520;
   const payments = event?.payments || [];
   const visiblePayments = payments.slice(0, visiblePaymentsCount);
 
@@ -104,13 +106,13 @@ export default function EventDetailScreen({ route, navigation }: any) {
     <Screen>
       <ScrollView contentContainerClassName="pb-40">
         <View className="px-6 pt-6">
-          <Text className="text-2xl font-bold text-slate-100">{event.name}</Text>
+          <Text className={`${isCompact ? 'text-xl' : 'text-2xl'} font-bold text-slate-100`}>{event.name}</Text>
           {event.client?.name ? (
-            <Text className="mt-1 text-sm text-slate-400">
+            <Text className={`${isCompact ? 'text-xs' : 'text-sm'} mt-1 text-slate-400`}>
               Cliente: {event.client.name}
             </Text>
           ) : null}
-          <Text className="mt-2 text-sm text-slate-400">
+          <Text className={`${isCompact ? 'text-xs' : 'text-sm'} mt-2 text-slate-400`}>
             {new Date(event.date).toLocaleDateString('es-AR')} · {event.startTime}
             {event.endTime ? ` - ${event.endTime}` : ''}
           </Text>
@@ -118,23 +120,23 @@ export default function EventDetailScreen({ route, navigation }: any) {
 
         <View className="mt-6 px-6">
           <Card>
-            <Text className="text-sm font-semibold text-slate-400">Resumen</Text>
+            <Text className={`${isCompact ? 'text-xs' : 'text-sm'} font-semibold text-slate-400`}>Resumen</Text>
             <View className="mt-4 flex-row justify-between">
               <View>
                 <Text className="text-xs text-slate-400">Invitados</Text>
-                <Text className="text-lg font-semibold text-slate-100">
+                <Text className={`${isCompact ? 'text-base' : 'text-lg'} font-semibold text-slate-100`}>
                   {event.guestCount}
                 </Text>
               </View>
               <View>
                 <Text className="text-xs text-slate-400">Platos</Text>
-                <Text className="text-lg font-semibold text-slate-100">
+                <Text className={`${isCompact ? 'text-base' : 'text-lg'} font-semibold text-slate-100`}>
                   {event.dishCount}
                 </Text>
               </View>
               <View>
                 <Text className="text-xs text-slate-400">Precio x plato</Text>
-                <Text className="text-lg font-semibold text-slate-100">
+                <Text className={`${isCompact ? 'text-base' : 'text-lg'} font-semibold text-slate-100`}>
                   {formatCurrency(event.pricePerDish, event.currency)}
                 </Text>
               </View>
@@ -142,19 +144,19 @@ export default function EventDetailScreen({ route, navigation }: any) {
             <View className="mt-4 border-t border-slate-800 pt-4">
               <View className="flex-row justify-between">
                 <Text className="text-sm text-slate-400">Total</Text>
-                <Text className="text-base font-semibold text-slate-100">
+                <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-slate-100`}>
                   {formatCurrency(totalDue, event.currency)}
                 </Text>
               </View>
               <View className="mt-2 flex-row justify-between">
                 <Text className="text-sm text-slate-400">Pagado</Text>
-                <Text className="text-base font-semibold text-emerald-400">
+                <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-emerald-400`}>
                   {formatCurrency(totalPaid, event.currency)}
                 </Text>
               </View>
               <View className="mt-2 flex-row justify-between">
                 <Text className="text-sm text-slate-400">Saldo</Text>
-                <Text className="text-base font-semibold text-rose-400">
+                <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-rose-400`}>
                   {formatCurrency(balance, event.currency)}
                 </Text>
               </View>
@@ -211,7 +213,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
 
         <View className="mt-6 px-6">
           <View className="flex-row items-center justify-between">
-            <Text className="text-lg font-semibold text-slate-100">Pagos</Text>
+            <Text className={`${isCompact ? 'text-base' : 'text-lg'} font-semibold text-slate-100`}>Pagos</Text>
             <TouchableOpacity
               onPress={() =>
                 navigation.navigate('CreatePayment', {
@@ -249,7 +251,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
                   >
                     <Card className="px-4 py-3">
                       <View className="flex-row justify-between">
-                        <Text className="text-base font-semibold text-slate-100">
+                        <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-slate-100`}>
                           {formatCurrency(payment.amount, payment.currency)}
                         </Text>
                         <Text className="text-xs text-slate-400">

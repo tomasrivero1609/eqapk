@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clientService } from '../../services/clientService';
 import { Client } from '../../types';
 import Screen from '../../components/ui/Screen';
@@ -13,6 +14,9 @@ export default function ClientsListScreen({ navigation }: any) {
     queryKey: ['clients'],
     queryFn: () => clientService.getAll(),
   });
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 520;
 
   if (isLoading) {
     return (
@@ -29,18 +33,18 @@ export default function ClientsListScreen({ navigation }: any) {
     >
       <Card>
         <View className="flex-row items-center justify-between">
-          <Text className="text-lg font-bold text-slate-100">{item.name}</Text>
+          <Text className={`${isCompact ? 'text-base' : 'text-lg'} font-bold text-slate-100`}>{item.name}</Text>
           <Text className="text-xs font-semibold text-violet-300">Ver</Text>
         </View>
-        <View className="mt-2 space-y-1">
+        <View className={`${isCompact ? 'mt-1' : 'mt-2'} space-y-1`}>
           {item.email ? (
-            <Text className="text-sm text-slate-400">{item.email}</Text>
+            <Text className={`${isCompact ? 'text-xs' : 'text-sm'} text-slate-400`}>{item.email}</Text>
           ) : null}
           {item.phone ? (
-            <Text className="text-sm text-slate-400">{item.phone}</Text>
+            <Text className={`${isCompact ? 'text-xs' : 'text-sm'} text-slate-400`}>{item.phone}</Text>
           ) : null}
           {item.address ? (
-            <Text className="text-sm text-slate-400">{item.address}</Text>
+            <Text className={`${isCompact ? 'text-xs' : 'text-sm'} text-slate-400`}>{item.address}</Text>
           ) : null}
         </View>
       </Card>
@@ -59,7 +63,7 @@ export default function ClientsListScreen({ navigation }: any) {
         data={clients || []}
         renderItem={renderClient}
         keyExtractor={(item) => item.id}
-        contentContainerClassName="pb-6"
+        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
         ListEmptyComponent={
           <EmptyState
             title="No hay clientes"
