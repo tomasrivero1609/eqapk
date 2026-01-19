@@ -36,6 +36,21 @@ export class CreatePaymentDto {
   platesCovered?: number;
 
   @IsOptional()
+  @IsInt()
+  @Min(0)
+  adultCovered?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  juvenileCovered?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  childCovered?: number;
+
+  @IsOptional()
   @IsString()
   method?: string;
 

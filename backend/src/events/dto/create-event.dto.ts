@@ -28,16 +28,48 @@ export class CreateEventDto {
   endTime?: string;
 
   @IsInt()
-  @Min(1)
+  @Min(0)
   guestCount: number;
 
+  @IsOptional()
   @IsInt()
-  @Min(1)
-  dishCount: number;
+  @Min(0)
+  dishCount?: number;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  pricePerDish: number;
+  pricePerDish?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  adultCount?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  juvenileCount?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  childCount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  adultPrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  juvenilePrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  childPrice?: number;
 
   @IsOptional()
   @IsEnum(Currency)

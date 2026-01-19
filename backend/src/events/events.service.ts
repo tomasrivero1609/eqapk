@@ -16,14 +16,35 @@ export class EventsService {
   ) {}
 
   async create(userId: string, createEventDto: CreateEventDto) {
+    const adultCount = createEventDto.adultCount ?? 0;
+    const juvenileCount = createEventDto.juvenileCount ?? 0;
+    const childCount = createEventDto.childCount ?? 0;
+    const sectionCount = adultCount + juvenileCount + childCount;
+    const adultPrice = createEventDto.adultPrice ?? 0;
+    const juvenilePrice = createEventDto.juvenilePrice ?? 0;
+    const childPrice = createEventDto.childPrice ?? 0;
+
+    const fallbackDishCount = createEventDto.dishCount ?? 0;
+    const fallbackPrice = createEventDto.pricePerDish ?? 0;
+
+    const dishCount = sectionCount > 0 ? sectionCount : fallbackDishCount;
+    const guestCount =
+      sectionCount > 0 ? sectionCount : createEventDto.guestCount;
     const totalAmount =
-      createEventDto.dishCount * createEventDto.pricePerDish;
+      sectionCount > 0
+        ? adultCount * adultPrice +
+          juvenileCount * juvenilePrice +
+          childCount * childPrice
+        : fallbackDishCount * fallbackPrice;
 
     const event = await this.prisma.event.create({
       data: {
         ...createEventDto,
         date: new Date(createEventDto.date),
         totalAmount,
+        dishCount,
+        guestCount,
+        pricePerDish: sectionCount > 0 ? 0 : fallbackPrice,
         userId,
       },
       include: {
@@ -154,20 +175,55 @@ export class EventsService {
 
     const shouldRecomputeTotal =
       updateEventDto.dishCount !== undefined ||
-      updateEventDto.pricePerDish !== undefined;
-    const dishCount = updateEventDto.dishCount ?? event.dishCount;
+      updateEventDto.pricePerDish !== undefined ||
+      updateEventDto.adultCount !== undefined ||
+      updateEventDto.juvenileCount !== undefined ||
+      updateEventDto.childCount !== undefined ||
+      updateEventDto.adultPrice !== undefined ||
+      updateEventDto.juvenilePrice !== undefined ||
+      updateEventDto.childPrice !== undefined;
+
+    const adultCount = updateEventDto.adultCount ?? event.adultCount;
+    const juvenileCount =
+      updateEventDto.juvenileCount ?? event.juvenileCount;
+    const childCount = updateEventDto.childCount ?? event.childCount;
+    const sectionCount = adultCount + juvenileCount + childCount;
+    const adultPrice = updateEventDto.adultPrice ?? event.adultPrice;
+    const juvenilePrice =
+      updateEventDto.juvenilePrice ?? event.juvenilePrice;
+    const childPrice = updateEventDto.childPrice ?? event.childPrice;
+
+    const dishCount =
+      sectionCount > 0
+        ? sectionCount
+        : updateEventDto.dishCount ?? event.dishCount;
     const pricePerDish =
-      updateEventDto.pricePerDish ?? event.pricePerDish;
+      sectionCount > 0
+        ? 0
+        : updateEventDto.pricePerDish ?? event.pricePerDish;
     const totalAmount = shouldRecomputeTotal
-      ? dishCount * pricePerDish
+      ? sectionCount > 0
+        ? adultCount * adultPrice +
+          juvenileCount * juvenilePrice +
+          childCount * childPrice
+        : dishCount * pricePerDish
       : event.totalAmount;
+    const guestCount =
+      sectionCount > 0
+        ? sectionCount
+        : updateEventDto.guestCount ?? event.guestCount;
 
     const updatedEvent = await this.prisma.event.update({
       where: { id },
       data: {
         ...updateEventDto,
         ...(updateEventDto.date && { date: new Date(updateEventDto.date) }),
-        ...(shouldRecomputeTotal && { totalAmount }),
+        ...(shouldRecomputeTotal && {
+          totalAmount,
+          dishCount,
+          pricePerDish,
+          guestCount,
+        }),
       },
       include: {
         client: true,

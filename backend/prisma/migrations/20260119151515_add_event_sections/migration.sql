@@ -1,0 +1,15 @@
+-- AlterTable
+ALTER TABLE "Event" ADD COLUMN     "adultCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "adultPrice" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "childCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "childPrice" DOUBLE PRECISION NOT NULL DEFAULT 0,
+ADD COLUMN     "juvenileCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "juvenilePrice" DOUBLE PRECISION NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "Payment" ADD COLUMN     "adultCovered" INTEGER,
+ADD COLUMN     "adultPriceAtPayment" DOUBLE PRECISION,
+ADD COLUMN     "childCovered" INTEGER,
+ADD COLUMN     "childPriceAtPayment" DOUBLE PRECISION,
+ADD COLUMN     "juvenileCovered" INTEGER,
+ADD COLUMN     "juvenilePriceAtPayment" DOUBLE PRECISION;

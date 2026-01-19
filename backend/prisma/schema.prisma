@@ -46,6 +46,12 @@ model Event {
   guestCount  Int
   dishCount   Int
   pricePerDish Float
+  adultCount  Int        @default(0)
+  juvenileCount Int      @default(0)
+  childCount  Int        @default(0)
+  adultPrice  Float      @default(0)
+  juvenilePrice Float    @default(0)
+  childPrice  Float      @default(0)
   currency    Currency   @default(ARS)
   totalAmount Float
   capacity    Int?
@@ -179,6 +185,12 @@ model Payment {
   exchangeRateDate DateTime?
   platesCovered Int?
   pricePerDishAtPayment Float?
+  adultCovered Int?
+  juvenileCovered Int?
+  childCovered Int?
+  adultPriceAtPayment Float?
+  juvenilePriceAtPayment Float?
+  childPriceAtPayment Float?
   method    String?
   notes     String?
   paidAt    DateTime @default(now())

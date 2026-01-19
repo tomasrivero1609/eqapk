@@ -12,8 +12,16 @@ export class PaymentsService {
   ) {}
 
   async create(createPaymentDto: CreatePaymentDto) {
-    const { eventId, paidAt, exchangeRateDate, platesCovered, ...rest } =
-      createPaymentDto;
+    const {
+      eventId,
+      paidAt,
+      exchangeRateDate,
+      platesCovered,
+      adultCovered,
+      juvenileCovered,
+      childCovered,
+      ...rest
+    } = createPaymentDto;
 
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
@@ -26,6 +34,32 @@ export class PaymentsService {
       throw new NotFoundException('Evento no encontrado');
     }
 
+    const sectionTotal =
+      (event.adultCount || 0) +
+      (event.juvenileCount || 0) +
+      (event.childCount || 0);
+    const sectionPrices =
+      sectionTotal === 0 && event.dishCount > 0
+        ? {
+            adultPrice: event.pricePerDish,
+            juvenilePrice: 0,
+            childPrice: 0,
+          }
+        : {
+            adultPrice: event.adultPrice,
+            juvenilePrice: event.juvenilePrice,
+            childPrice: event.childPrice,
+          };
+
+    const fallbackAdult = platesCovered ?? 0;
+    const adultCoveredValue = adultCovered ?? fallbackAdult;
+    const juvenileCoveredValue = juvenileCovered ?? 0;
+    const childCoveredValue = childCovered ?? 0;
+    const totalCovered =
+      adultCoveredValue + juvenileCoveredValue + childCoveredValue;
+
+    const usesSections = totalCovered > 0;
+
     const payment = await this.prisma.payment.create({
       data: {
         ...rest,
@@ -34,9 +68,24 @@ export class PaymentsService {
         exchangeRateDate: exchangeRateDate
           ? new Date(exchangeRateDate)
           : undefined,
-        platesCovered: platesCovered ?? undefined,
+        platesCovered: totalCovered > 0 ? totalCovered : platesCovered ?? undefined,
         pricePerDishAtPayment:
-          platesCovered ? event.pricePerDish : undefined,
+          !usesSections && platesCovered ? event.pricePerDish : undefined,
+        adultCovered: usesSections ? adultCoveredValue : undefined,
+        juvenileCovered: usesSections ? juvenileCoveredValue : undefined,
+        childCovered: usesSections ? childCoveredValue : undefined,
+        adultPriceAtPayment:
+          usesSections && adultCoveredValue > 0
+            ? sectionPrices.adultPrice
+            : undefined,
+        juvenilePriceAtPayment:
+          usesSections && juvenileCoveredValue > 0
+            ? sectionPrices.juvenilePrice
+            : undefined,
+        childPriceAtPayment:
+          usesSections && childCoveredValue > 0
+            ? sectionPrices.childPrice
+            : undefined,
       },
     });
 
