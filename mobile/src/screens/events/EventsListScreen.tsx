@@ -47,7 +47,7 @@ export default function EventsListScreen({ navigation }: any) {
   });
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const isCompact = width < 360;
+  const isCompact = width < 520;
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {

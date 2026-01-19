@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useWindowDimensions } from 'react-native';
 import EventsListScreen from '../screens/events/EventsListScreen';
 import EventDetailScreen from '../screens/events/EventDetailScreen';
 import CreateEventScreen from '../screens/events/CreateEventScreen';
@@ -21,21 +22,27 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-const stackScreenOptions = {
+const getStackScreenOptions = (isCompact: boolean) => ({
   headerShown: true,
   headerShadowVisible: false,
   headerStyle: { backgroundColor: '#0B1120' },
-  headerTitleStyle: { fontWeight: '600', color: '#E2E8F0' },
+  headerTitleStyle: {
+    fontWeight: '600',
+    color: '#E2E8F0',
+    fontSize: isCompact ? 16 : 18,
+  },
+  headerTitleAlign: isCompact ? 'left' : 'center',
+  headerTitleContainerStyle: isCompact ? { paddingRight: 64 } : undefined,
   headerTintColor: '#E2E8F0',
   headerLeftContainerStyle: { paddingLeft: 12 },
   headerRightContainerStyle: { paddingRight: 12 },
   headerRight: () => <LogoutButton />,
-  headerLeft: () => <RolePill />,
-};
+  headerLeft: () => (isCompact ? null : <RolePill />),
+});
 
-function EventsStack() {
+function EventsStack({ isCompact }: { isCompact: boolean }) {
   return (
-    <Stack.Navigator screenOptions={stackScreenOptions}>
+    <Stack.Navigator screenOptions={getStackScreenOptions(isCompact)}>
       <Stack.Screen name="EventsList" component={EventsListScreen} options={{ title: 'Eventos' }} />
       <Stack.Screen name="EventsCalendar" component={EventsCalendarScreen} options={{ title: 'Calendario' }} />
       <Stack.Screen name="EventDetail" component={EventDetailScreen} options={{ title: 'Detalle del evento' }} />
@@ -47,9 +54,9 @@ function EventsStack() {
   );
 }
 
-function ClientsStack() {
+function ClientsStack({ isCompact }: { isCompact: boolean }) {
   return (
-    <Stack.Navigator screenOptions={stackScreenOptions}>
+    <Stack.Navigator screenOptions={getStackScreenOptions(isCompact)}>
       <Stack.Screen name="ClientsList" component={ClientsListScreen} options={{ title: 'Clientes' }} />
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: 'Detalle del cliente' }} />
       <Stack.Screen name="CreateClient" component={CreateClientScreen} options={{ title: 'Nuevo cliente' }} />
@@ -57,9 +64,9 @@ function ClientsStack() {
   );
 }
 
-function AdminStack() {
+function AdminStack({ isCompact }: { isCompact: boolean }) {
   return (
-    <Stack.Navigator screenOptions={stackScreenOptions}>
+    <Stack.Navigator screenOptions={getStackScreenOptions(isCompact)}>
       <Stack.Screen name="AdminSummary" component={AdminSummaryScreen} options={{ title: 'Ingresos' }} />
     </Stack.Navigator>
   );
@@ -73,6 +80,8 @@ export default function MainNavigator({ route }: any) {
     | 'Admin'
     | undefined;
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 520;
 
   return (
     <Tab.Navigator
@@ -87,8 +96,8 @@ export default function MainNavigator({ route }: any) {
           paddingBottom: Math.max(10, insets.bottom + 6),
           paddingTop: 10,
           height: 64 + insets.bottom,
-          marginHorizontal: 16,
-          marginBottom: 12,
+          marginHorizontal: isCompact ? 10 : 16,
+          marginBottom: isCompact ? 8 : 12,
           borderRadius: 24,
           position: 'absolute',
         },
@@ -98,10 +107,16 @@ export default function MainNavigator({ route }: any) {
         },
       }}
     >
-      <Tab.Screen name="Events" component={EventsStack} options={{ title: 'Eventos' }} />
-      <Tab.Screen name="Clients" component={ClientsStack} options={{ title: 'Clientes' }} />
+      <Tab.Screen name="Events">
+        {() => <EventsStack isCompact={isCompact} />}
+      </Tab.Screen>
+      <Tab.Screen name="Clients">
+        {() => <ClientsStack isCompact={isCompact} />}
+      </Tab.Screen>
       {userRole === UserRole.SUPERADMIN ? (
-        <Tab.Screen name="Admin" component={AdminStack} options={{ title: 'Ingresos' }} />
+        <Tab.Screen name="Admin">
+          {() => <AdminStack isCompact={isCompact} />}
+        </Tab.Screen>
       ) : null}
     </Tab.Navigator>
   );

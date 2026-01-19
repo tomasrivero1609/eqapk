@@ -7,7 +7,7 @@ export default function RolePill() {
   const role = useAuthStore((state) => state.user?.role);
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
-  const isCompact = width < 360;
+  const isCompact = width < 420;
 
   if (!role) {
     return null;

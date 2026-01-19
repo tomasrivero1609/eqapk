@@ -5,7 +5,7 @@ import { useAuthStore } from '../../store/authStore';
 export default function LogoutButton() {
   const logout = useAuthStore((state) => state.logout);
   const { width } = useWindowDimensions();
-  const isCompact = width < 360;
+  const isCompact = width < 420;
 
   return (
     <TouchableOpacity

@@ -36,7 +36,8 @@ export default function RoleLandingScreen({ navigation }: any) {
   const actions = routesByRole[role];
   const roleLabel = role === UserRole.SUPERADMIN ? 'Superadmin' : 'Admin';
   const { width } = useWindowDimensions();
-  const isCompact = width < 360;
+  const isCompact = width < 520;
+  const sectionPadding = isCompact ? 'px-4' : 'px-6';
   const { data: dolarOficial, isLoading: isLoadingDolarOficial } = useQuery({
     queryKey: ['dolar-oficial'],
     queryFn: () => dolarService.getOficial(),
@@ -51,7 +52,7 @@ export default function RoleLandingScreen({ navigation }: any) {
   return (
     <Screen>
       <SafeAreaView className="flex-1">
-        <View className="px-6 pt-6">
+        <View className={`${sectionPadding} ${isCompact ? 'pt-4' : 'pt-6'}`}>
           <View className={isCompact ? 'flex-col' : 'flex-row items-center justify-between'}>
             <View className={isCompact ? '' : 'flex-1 pr-3'}>
               <Text
@@ -73,7 +74,7 @@ export default function RoleLandingScreen({ navigation }: any) {
           </View>
         </View>
 
-        <View className="mt-8 px-6">
+        <View className={`${isCompact ? 'mt-6' : 'mt-8'} ${sectionPadding}`}>
           <Card className="bg-slate-900/90 border-violet-500/30">
             <Text className="text-base font-semibold text-slate-100">
               Panel de control
@@ -83,7 +84,7 @@ export default function RoleLandingScreen({ navigation }: any) {
             </Text>
           </Card>
         </View>
-        <View className="mt-4 px-6 space-y-3">
+        <View className={`mt-4 ${sectionPadding} space-y-3`}>
           <Card>
             <Text className="text-xs font-semibold text-slate-400">
               Dolar oficial
@@ -132,7 +133,7 @@ export default function RoleLandingScreen({ navigation }: any) {
           </Card>
         </View>
 
-        <View className={`mt-6 px-6 flex-row flex-wrap ${isCompact ? 'gap-3' : 'gap-4'}`}>
+        <View className={`mt-6 ${sectionPadding} flex-row flex-wrap ${isCompact ? 'gap-3' : 'gap-4'}`}>
           {actions.map((item) => (
             <TouchableOpacity
               key={item.key}
@@ -151,7 +152,7 @@ export default function RoleLandingScreen({ navigation }: any) {
           ))}
         </View>
 
-        <View className={`mt-6 px-6 ${isCompact ? 'pb-20' : 'pb-8'}`}>
+        <View className={`mt-6 ${sectionPadding} ${isCompact ? 'pb-28' : 'pb-8'}`}>
           <Button
             label="Ir al panel"
             onPress={() => navigation.replace('MainTabs', { initialTab: 'Events' })}
