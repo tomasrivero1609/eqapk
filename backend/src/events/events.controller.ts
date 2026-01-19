@@ -58,9 +58,10 @@ export class EventsController {
     @Param('id') id: string,
     @GetUser() user: any,
     @Body('apply') apply?: boolean,
+    @Body('force') force?: boolean,
   ) {
     if (apply) {
-      return this.eventsService.applyQuarterlyAdjustment(id, user.id);
+      return this.eventsService.applyQuarterlyAdjustment(id, user.id, force);
     }
     return this.eventsService.previewQuarterlyAdjustment(id, user.id);
   }

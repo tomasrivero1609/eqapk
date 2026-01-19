@@ -352,9 +352,13 @@ export class EventsService {
     };
   }
 
-  async applyQuarterlyAdjustment(id: string, userId: string) {
+  async applyQuarterlyAdjustment(
+    id: string,
+    userId: string,
+    force?: boolean,
+  ) {
     const preview = await this.previewQuarterlyAdjustment(id, userId);
-    if (!preview.eligible) {
+    if (!preview.eligible && !force) {
       throw new BadRequestException('Aun no corresponde el ajuste trimestral');
     }
 

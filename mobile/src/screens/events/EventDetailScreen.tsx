@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert, useWindowDimensions, Modal } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { eventService } from '../../services/eventService';
 import { dolarService } from '../../services/dolarService';
@@ -43,6 +43,9 @@ export default function EventDetailScreen({ route, navigation }: any) {
   const payments = event?.payments || [];
   const visiblePayments = payments.slice(0, visiblePaymentsCount);
   const [isAdjusting, setIsAdjusting] = useState(false);
+  const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
+  const [adjustmentPreview, setAdjustmentPreview] = useState<any>(null);
+  const [adjustmentError, setAdjustmentError] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -155,51 +158,34 @@ export default function EventDetailScreen({ route, navigation }: any) {
     try {
       setIsAdjusting(true);
       const preview = await eventService.previewQuarterlyAdjustment(event.id);
-      if (!preview.eligible) {
-        Alert.alert(
-          'Ajuste no disponible',
-          `Podrás aplicar el ajuste desde ${new Date(preview.nextEligibleAt).toLocaleDateString('es-AR')}.`,
-        );
-        return;
-      }
-      const message = `Plato adulto: ${formatCurrency(preview.currentPrices.adult, event.currency)} → ${formatCurrency(
-        preview.newPrices.adult,
-        event.currency,
-      )}\nPlato juvenil: ${formatCurrency(preview.currentPrices.juvenile, event.currency)} → ${formatCurrency(
-        preview.newPrices.juvenile,
-        event.currency,
-      )}\nPlato infantil: ${formatCurrency(preview.currentPrices.child, event.currency)} → ${formatCurrency(
-        preview.newPrices.child,
-        event.currency,
-      )}`;
-
-      Alert.alert(
-        'Calculo trimestral',
-        message,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Ajustar ahora',
-            style: 'default',
-            onPress: async () => {
-              try {
-                await eventService.applyQuarterlyAdjustment(event.id);
-                await refetch();
-                Alert.alert('Listo', 'Ajuste trimestral aplicado.');
-              } catch (error: any) {
-                Alert.alert(
-                  'Error',
-                  error.response?.data?.message || 'No se pudo aplicar el ajuste.',
-                );
-              }
-            },
-          },
-        ],
+      setAdjustmentPreview(preview);
+      setAdjustmentError(null);
+      setShowAdjustmentModal(true);
+    } catch (error: any) {
+      setAdjustmentError(
+        error.response?.data?.message || 'No se pudo calcular el ajuste.',
       );
+      setShowAdjustmentModal(true);
+    } finally {
+      setIsAdjusting(false);
+    }
+  };
+
+  const handleApplyAdjustment = async () => {
+    if (!event) {
+      return;
+    }
+    try {
+      setIsAdjusting(true);
+      const force = adjustmentPreview && !adjustmentPreview.eligible;
+      await eventService.applyQuarterlyAdjustment(event.id, force);
+      await refetch();
+      setShowAdjustmentModal(false);
+      Alert.alert('Listo', 'Ajuste trimestral aplicado.');
     } catch (error: any) {
       Alert.alert(
         'Error',
-        error.response?.data?.message || 'No se pudo calcular el ajuste.',
+        error.response?.data?.message || 'No se pudo aplicar el ajuste.',
       );
     } finally {
       setIsAdjusting(false);
@@ -273,6 +259,12 @@ export default function EventDetailScreen({ route, navigation }: any) {
                   {formatCurrency(balance, event.currency)}
                 </Text>
               </View>
+              {event.quarterlyAdjustmentEnabled &&
+                event.quarterlyAdjustmentPercent > 0 && (
+                  <Text className="mt-3 text-xs text-slate-500">
+                    Ajuste trimestral configurado: {event.quarterlyAdjustmentPercent}%
+                  </Text>
+                )}
               {(coveredTotals.adultCovered > 0 ||
                 coveredTotals.juvenileCovered > 0 ||
                 coveredTotals.childCovered > 0) && (
@@ -301,6 +293,42 @@ export default function EventDetailScreen({ route, navigation }: any) {
             </Card>
           </View>
         )}
+
+        {event.quarterlyAdjustmentEnabled &&
+          event.quarterlyAdjustmentPercent > 0 && (
+            <View className="mt-4 px-6">
+              <Card>
+                <Text className="text-sm font-semibold text-slate-100">
+                  Ajuste trimestral ({event.quarterlyAdjustmentPercent}%)
+                </Text>
+                <Text className="mt-2 text-xs text-slate-500">
+                  Ultimo ajuste:{' '}
+                  {event.lastAdjustmentAt
+                    ? new Date(event.lastAdjustmentAt).toLocaleDateString('es-AR')
+                    : new Date(event.createdAt).toLocaleDateString('es-AR')}
+                </Text>
+                <Text className="mt-1 text-xs text-slate-500">
+                  Proximo ajuste disponible desde:{' '}
+                  {(() => {
+                    const base = event.lastAdjustmentAt
+                      ? new Date(event.lastAdjustmentAt)
+                      : new Date(event.createdAt);
+                    const next = new Date(base);
+                    next.setMonth(next.getMonth() + 3);
+                    return next.toLocaleDateString('es-AR');
+                  })()}
+                </Text>
+                <View className="mt-3">
+                  <Button
+                    label="Ver calculo trimestral"
+                    variant="secondary"
+                    onPress={handleQuarterlyAdjustment}
+                    loading={isAdjusting}
+                  />
+                </View>
+              </Card>
+            </View>
+          )}
 
         {(event.description || event.notes) && (
           <View className="mt-6 px-6">
@@ -437,44 +465,13 @@ export default function EventDetailScreen({ route, navigation }: any) {
           )}
         </View>
 
-        <View className="mt-6 px-6">
+        <View className="mt-6 px-6 space-y-3">
           <Button
             label="Editar evento"
             variant="secondary"
             onPress={() => navigation.navigate('CreateEvent', { eventId: event.id })}
           />
-        </View>
 
-        {event.quarterlyAdjustmentEnabled &&
-          event.quarterlyAdjustmentPercent > 0 && (
-            <View className="mt-3 px-6">
-              <Button
-                label={`Calculo trimestral (${event.quarterlyAdjustmentPercent}%)`}
-                variant="secondary"
-                onPress={handleQuarterlyAdjustment}
-                loading={isAdjusting}
-              />
-              <Text className="mt-2 text-xs text-slate-500">
-                Ultimo ajuste:{' '}
-                {event.lastAdjustmentAt
-                  ? new Date(event.lastAdjustmentAt).toLocaleDateString('es-AR')
-                  : new Date(event.createdAt).toLocaleDateString('es-AR')}
-              </Text>
-              <Text className="mt-1 text-xs text-slate-500">
-                Proximo ajuste disponible desde:{' '}
-                {(() => {
-                  const base = event.lastAdjustmentAt
-                    ? new Date(event.lastAdjustmentAt)
-                    : new Date(event.createdAt);
-                  const next = new Date(base);
-                  next.setMonth(next.getMonth() + 3);
-                  return next.toLocaleDateString('es-AR');
-                })()}
-              </Text>
-            </View>
-          )}
-
-        <View className="mt-4 px-6">
           <Button
             label="Eliminar evento"
             variant="ghost"
@@ -505,6 +502,54 @@ export default function EventDetailScreen({ route, navigation }: any) {
           />
         </View>
       </ScrollView>
+
+      <Modal visible={showAdjustmentModal} transparent animationType="fade">
+        <View className="flex-1 items-center justify-center bg-black/60 px-6">
+          <View className="w-full rounded-3xl bg-slate-900 p-4">
+            <Text className="text-base font-semibold text-slate-100">
+              Calculo trimestral
+            </Text>
+            {adjustmentError ? (
+              <Text className="mt-2 text-sm text-rose-300">{adjustmentError}</Text>
+            ) : adjustmentPreview ? (
+              <>
+                <Text className="mt-2 text-xs text-slate-400">
+                  Precios actuales → nuevos
+                </Text>
+                <View className="mt-3 space-y-2">
+                  <Text className="text-sm text-slate-200">
+                    Adulto: {formatCurrency(adjustmentPreview.currentPrices.adult, event.currency)} →{' '}
+                    {formatCurrency(adjustmentPreview.newPrices.adult, event.currency)}
+                  </Text>
+                  <Text className="text-sm text-slate-200">
+                    Juvenil: {formatCurrency(adjustmentPreview.currentPrices.juvenile, event.currency)} →{' '}
+                    {formatCurrency(adjustmentPreview.newPrices.juvenile, event.currency)}
+                  </Text>
+                  <Text className="text-sm text-slate-200">
+                    Infantil: {formatCurrency(adjustmentPreview.currentPrices.child, event.currency)} →{' '}
+                    {formatCurrency(adjustmentPreview.newPrices.child, event.currency)}
+                  </Text>
+                </View>
+              {!adjustmentPreview.eligible && (
+                <Text className="mt-3 text-xs text-amber-300">
+                  Disponible desde {new Date(adjustmentPreview.nextEligibleAt).toLocaleDateString('es-AR')}.
+                </Text>
+              )}
+            </>
+          ) : (
+            <Text className="mt-2 text-sm text-slate-400">Cargando...</Text>
+          )}
+          <View className="mt-4 space-y-2">
+            <Button label="Cerrar" variant="secondary" onPress={() => setShowAdjustmentModal(false)} />
+            <Button
+              label="Ajustar ahora"
+              onPress={handleApplyAdjustment}
+              loading={isAdjusting}
+            />
+          </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }

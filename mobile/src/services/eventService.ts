@@ -43,10 +43,10 @@ export const eventService = {
     return response.data;
   },
 
-  async applyQuarterlyAdjustment(id: string) {
+  async applyQuarterlyAdjustment(id: string, force?: boolean) {
     const response = await api.post(
       `${API_ENDPOINTS.EVENTS}/${id}/quarterly-adjustment`,
-      { apply: true },
+      { apply: true, force },
     );
     return response.data;
   },
