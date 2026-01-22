@@ -123,8 +123,8 @@ export default function CreateEventScreen({ navigation, route }: any) {
     enabled: !!eventId,
   });
   const { data: availability, isLoading: isCheckingAvailability } = useQuery({
-    queryKey: ['event-availability', formData.date],
-    queryFn: () => eventService.checkAvailability(formData.date),
+    queryKey: ['event-availability', formData.date, eventId],
+    queryFn: () => eventService.checkAvailability(formData.date, eventId),
     enabled: Boolean(formData.date),
     staleTime: 60 * 1000,
   });

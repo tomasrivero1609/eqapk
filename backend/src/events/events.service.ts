@@ -270,8 +270,32 @@ export class EventsService {
     return updatedEvent;
   }
 
-  async checkAvailability(date: string) {
-    return this.calendarService.checkDateAvailability(date);
+  async checkAvailability(date: string, eventId?: string) {
+    if (!eventId) {
+      return this.calendarService.checkDateAvailability(date);
+    }
+
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+      select: { id: true, date: true, calendarEventId: true },
+    });
+
+    if (!event || !event.calendarEventId) {
+      return this.calendarService.checkDateAvailability(date);
+    }
+
+    const availability = await this.calendarService.checkDateAvailability(date);
+    if (availability.status !== 'ok') {
+      return availability;
+    }
+
+    const sameDate =
+      event.date.toISOString().slice(0, 10) === date;
+    if (sameDate && (availability.busyCount || 0) <= 1) {
+      return { ...availability, available: true };
+    }
+
+    return availability;
   }
 
   async previewQuarterlyAdjustment(id: string, userId: string) {

@@ -27,10 +27,10 @@ export const eventService = {
     await api.delete(`${API_ENDPOINTS.EVENTS}/${id}`);
   },
 
-  async checkAvailability(date: string): Promise<CalendarAvailability> {
+  async checkAvailability(date: string, eventId?: string): Promise<CalendarAvailability> {
     const response = await api.get<CalendarAvailability>(
       `${API_ENDPOINTS.EVENTS}/availability`,
-      { params: { date } },
+      { params: { date, eventId } },
     );
     return response.data;
   },
