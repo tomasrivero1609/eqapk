@@ -6,6 +6,7 @@ import Card from '../../components/ui/Card';
 import EmptyState from '../../components/ui/EmptyState';
 import { eventService } from '../../services/eventService';
 import { Event } from '../../types';
+import { parseLocalDateString, formatLocalDate } from '../../utils/date';
 
 const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -46,7 +47,7 @@ export default function EventsCalendarScreen({ navigation }: any) {
   const eventsByDay = useMemo(() => {
     const map = new Map<string, Event[]>();
     (events || []).forEach((event) => {
-      const date = new Date(event.date);
+      const date = parseLocalDateString(event.date);
       const key = toDateKey(date);
       if (!map.has(key)) {
         map.set(key, []);
@@ -171,7 +172,7 @@ export default function EventsCalendarScreen({ navigation }: any) {
                       {event.name}
                     </Text>
                     <Text className="mt-1 text-xs text-slate-400">
-                      {new Date(event.date).toLocaleDateString('es-AR')}
+                      {formatLocalDate(event.date)}
                     </Text>
                     <Text className="mt-1 text-xs text-slate-500">
                       Estado: {event.status}

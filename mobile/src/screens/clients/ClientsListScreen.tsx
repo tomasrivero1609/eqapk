@@ -53,7 +53,7 @@ export default function ClientsListScreen({ navigation }: any) {
 
   return (
     <Screen>
-      <View className="px-4 pt-6">
+      <View className="px-4 pt-6 pb-4">
         <Button
           label="Nuevo cliente"
           onPress={() => navigation.navigate('CreateClient')}
@@ -63,7 +63,7 @@ export default function ClientsListScreen({ navigation }: any) {
         data={clients || []}
         renderItem={renderClient}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
+        contentContainerStyle={{ paddingTop: 4, paddingBottom: insets.bottom + 120 }}
         ListEmptyComponent={
           <EmptyState
             title="No hay clientes"

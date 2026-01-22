@@ -10,6 +10,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/format';
+import { formatLocalDate } from '../../utils/date';
 
 const daysSince = (date: Date) => {
   const now = Date.now();
@@ -87,7 +88,7 @@ export default function EventsListScreen({ navigation }: any) {
           </View>
         </View>
         <Text className={`${isCompact ? 'text-xs' : 'text-sm'} mt-2 text-slate-400`}>
-          {new Date(item.date).toLocaleDateString('es-AR')}
+          {formatLocalDate(item.date)}
         </Text>
         <View className="mt-3 flex-row items-center justify-between">
           <View>
@@ -116,7 +117,7 @@ export default function EventsListScreen({ navigation }: any) {
 
   return (
     <Screen>
-      <View className="px-4 pt-6">
+      <View className="px-4 pt-6 pb-4">
         {isCompact ? (
           <View className="space-y-3">
             <Button
@@ -152,7 +153,7 @@ export default function EventsListScreen({ navigation }: any) {
         data={events || []}
         renderItem={renderEvent}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
+        contentContainerStyle={{ paddingTop: 4, paddingBottom: insets.bottom + 120 }}
         ListEmptyComponent={
           <EmptyState
             title="No hay eventos"

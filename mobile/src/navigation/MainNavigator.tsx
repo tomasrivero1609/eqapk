@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useWindowDimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import EventsListScreen from '../screens/events/EventsListScreen';
 import EventDetailScreen from '../screens/events/EventDetailScreen';
 import CreateEventScreen from '../screens/events/CreateEventScreen';
@@ -90,9 +91,12 @@ export default function MainNavigator({ route }: any) {
         headerShown: false,
         tabBarActiveTintColor: '#E2E8F0',
         tabBarInactiveTintColor: '#64748B',
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
-          backgroundColor: '#0F172A',
+          backgroundColor: 'transparent',
           borderTopWidth: 0,
+          shadowOpacity: 0,
+          elevation: 0,
           paddingBottom: Math.max(10, insets.bottom + 6),
           paddingTop: 10,
           height: 64 + insets.bottom,
@@ -101,20 +105,50 @@ export default function MainNavigator({ route }: any) {
           borderRadius: 24,
           position: 'absolute',
         },
+        tabBarItemStyle: {
+          backgroundColor: 'rgba(15, 23, 42, 0.6)',
+          marginHorizontal: 4,
+          borderRadius: 18,
+          paddingVertical: 6,
+        },
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
         },
       }}
     >
-      <Tab.Screen name="Events">
+      <Tab.Screen
+        name="Events"
+        options={{
+          tabBarLabel: 'Eventos',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
+          ),
+        }}
+      >
         {() => <EventsStack isCompact={isCompact} />}
       </Tab.Screen>
-      <Tab.Screen name="Clients">
+      <Tab.Screen
+        name="Clients"
+        options={{
+          tabBarLabel: 'Clientes',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={color} />
+          ),
+        }}
+      >
         {() => <ClientsStack isCompact={isCompact} />}
       </Tab.Screen>
       {userRole === UserRole.SUPERADMIN ? (
-        <Tab.Screen name="Admin">
+        <Tab.Screen
+          name="Admin"
+          options={{
+            tabBarLabel: 'Ingresos',
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="stats-chart" size={size} color={color} />
+            ),
+          }}
+        >
           {() => <AdminStack isCompact={isCompact} />}
         </Tab.Screen>
       ) : null}

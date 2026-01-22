@@ -10,6 +10,7 @@ import Button from '../../components/ui/Button';
 import { Payment } from '../../types';
 import { formatCurrency } from '../../utils/format';
 import { convertAmount } from '../../utils/currency';
+import { formatLocalDate } from '../../utils/date';
 
 const daysSince = (date: Date) => {
   const now = Date.now();
@@ -203,7 +204,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
             </Text>
           ) : null}
           <Text className={`${isCompact ? 'text-xs' : 'text-sm'} mt-2 text-slate-400`}>
-            {new Date(event.date).toLocaleDateString('es-AR')} · {event.startTime}
+            {formatLocalDate(event.date)} · {event.startTime}
             {event.endTime ? ` - ${event.endTime}` : ''}
           </Text>
         </View>
