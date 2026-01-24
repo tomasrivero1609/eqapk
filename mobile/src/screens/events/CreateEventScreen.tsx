@@ -164,23 +164,19 @@ export default function CreateEventScreen({ navigation, route }: any) {
         (event.adultCount || 0) +
         (event.juvenileCount || 0) +
         (event.childCount || 0);
-      const fallbackAdultCount =
-        sectionCount === 0 ? event.dishCount : event.adultCount;
-      const fallbackAdultPrice =
-        sectionCount === 0 ? event.pricePerDish : event.adultPrice;
       const mapped: CreateEventDto = {
         name: event.name,
         description: event.description || '',
         date: event.date.slice(0, 10),
         startTime: event.startTime,
         endTime: event.endTime || '',
-        guestCount: sectionCount > 0 ? sectionCount : event.guestCount,
+        guestCount: event.guestCount,
         dishCount: event.dishCount,
         pricePerDish: event.pricePerDish,
-        adultCount: fallbackAdultCount || 0,
+        adultCount: event.adultCount || 0,
         juvenileCount: event.juvenileCount || 0,
         childCount: event.childCount || 0,
-        adultPrice: fallbackAdultPrice || 0,
+        adultPrice: event.adultPrice || 0,
         juvenilePrice: event.juvenilePrice || 0,
         childPrice: event.childPrice || 0,
         quarterlyAdjustmentPercent: event.quarterlyAdjustmentPercent || 0,
@@ -250,6 +246,7 @@ export default function CreateEventScreen({ navigation, route }: any) {
     (formData.adultCount || 0) +
     (formData.juvenileCount || 0) +
     (formData.childCount || 0);
+  const contractedPlates = formData.dishCount ?? 0;
   const totalAmount =
     (formData.adultCount || 0) * (formData.adultPrice || 0) +
     (formData.juvenileCount || 0) * (formData.juvenilePrice || 0) +
@@ -319,6 +316,7 @@ export default function CreateEventScreen({ navigation, route }: any) {
 
     if (
       !Number.isFinite(totalGuests) ||
+      !Number.isFinite(contractedPlates) ||
       !Number.isFinite(formData.adultPrice) ||
       !Number.isFinite(formData.juvenilePrice) ||
       !Number.isFinite(formData.childPrice)
@@ -327,15 +325,23 @@ export default function CreateEventScreen({ navigation, route }: any) {
       return;
     }
 
-    if (totalGuests <= 0) {
-      Alert.alert('Error', 'Agrega al menos una cantidad de platos');
+    if (contractedPlates <= 0) {
+      Alert.alert('Error', 'Completa la cantidad de platos contratados');
+      return;
+    }
+
+    if (totalGuests > contractedPlates) {
+      Alert.alert(
+        'Cantidad invalida',
+        'La suma de platos adultos, juveniles e infantiles no puede superar los platos contratados.',
+      );
       return;
     }
 
     const payload: CreateEventDto = {
       ...formData,
-      guestCount: totalGuests,
-      dishCount: totalGuests,
+      guestCount: contractedPlates,
+      dishCount: contractedPlates,
       pricePerDish: 0,
       menuDescription: formData.menuDescription?.trim() || undefined,
       eventHours: formData.eventHours?.trim() || undefined,
@@ -623,8 +629,29 @@ export default function CreateEventScreen({ navigation, route }: any) {
           )}
 
           <View className="space-y-4">
+            <Input
+              label="Platos contratados"
+              placeholder="100"
+              keyboardType="number-pad"
+              value={formData.dishCount?.toString() || '0'}
+              onChangeText={(text) => {
+                const nextValue = Math.max(0, parseInt(normalizeIntInput(text) || '0', 10));
+                setFormData((prev) => ({
+                  ...prev,
+                  dishCount: nextValue,
+                  adultCount: Math.min(prev.adultCount || 0, nextValue),
+                  juvenileCount: Math.min(prev.juvenileCount || 0, nextValue),
+                  childCount: Math.min(prev.childCount || 0, nextValue),
+                }));
+              }}
+            />
+            {totalGuests > contractedPlates && contractedPlates > 0 && (
+              <Text className="text-xs font-semibold text-rose-400">
+                La suma de platos no puede superar los contratados.
+              </Text>
+            )}
             <Text className="text-sm font-semibold text-slate-300">
-              Platos por sección
+              Platos por seccion
             </Text>
             <Card>
               <Text className="text-sm font-semibold text-slate-100">Adultos</Text>
@@ -729,10 +756,10 @@ export default function CreateEventScreen({ navigation, route }: any) {
 
           <Card>
             <Text className="text-sm font-semibold text-slate-400">
-              Total de invitados
+              Platos asignados
             </Text>
             <Text className="mt-1 text-xl font-bold text-slate-100">
-              {totalGuests}
+              {totalGuests} / {contractedPlates}
             </Text>
           </Card>
 

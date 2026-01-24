@@ -92,15 +92,15 @@ export default function EventsListScreen({ navigation }: any) {
         </Text>
         <View className="mt-3 flex-row items-center justify-between">
           <View>
-            <Text className="text-xs text-slate-400">Platos</Text>
+            <Text className="text-xs text-slate-400">Contratados</Text>
             <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-slate-100`}>
               {item.dishCount}
             </Text>
           </View>
           <View>
-            <Text className="text-xs text-slate-400">Invitados</Text>
+            <Text className="text-xs text-slate-400">Asignados</Text>
             <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-slate-100`}>
-              {item.guestCount}
+              {(item.adultCount || 0) + (item.juvenileCount || 0) + (item.childCount || 0)}
             </Text>
           </View>
           <View>

@@ -27,15 +27,21 @@ export class EventsService {
     const fallbackDishCount = createEventDto.dishCount ?? 0;
     const fallbackPrice = createEventDto.pricePerDish ?? 0;
 
-    const dishCount = sectionCount > 0 ? sectionCount : fallbackDishCount;
-    const guestCount =
-      sectionCount > 0 ? sectionCount : createEventDto.guestCount;
+    const dishCount = createEventDto.dishCount ?? sectionCount;
+    const guestCount = createEventDto.guestCount ?? dishCount;
+    if (sectionCount > dishCount) {
+      throw new BadRequestException(
+        'La suma de platos adultos, juveniles e infantiles no puede superar los platos contratados.',
+      );
+    }
     const totalAmount =
       sectionCount > 0
         ? adultCount * adultPrice +
           juvenileCount * juvenilePrice +
           childCount * childPrice
-        : fallbackDishCount * fallbackPrice;
+        : fallbackPrice > 0
+          ? dishCount * fallbackPrice
+          : 0;
 
     const quarterlyAdjustmentPercent =
       createEventDto.quarterlyAdjustmentPercent ?? 0;
@@ -198,10 +204,12 @@ export class EventsService {
       updateEventDto.juvenilePrice ?? event.juvenilePrice;
     const childPrice = updateEventDto.childPrice ?? event.childPrice;
 
-    const dishCount =
-      sectionCount > 0
-        ? sectionCount
-        : updateEventDto.dishCount ?? event.dishCount;
+    const dishCount = updateEventDto.dishCount ?? event.dishCount;
+    if (sectionCount > dishCount) {
+      throw new BadRequestException(
+        'La suma de platos adultos, juveniles e infantiles no puede superar los platos contratados.',
+      );
+    }
     const pricePerDish =
       sectionCount > 0
         ? 0
@@ -211,12 +219,12 @@ export class EventsService {
         ? adultCount * adultPrice +
           juvenileCount * juvenilePrice +
           childCount * childPrice
-        : dishCount * pricePerDish
+        : pricePerDish > 0
+          ? dishCount * pricePerDish
+          : 0
       : event.totalAmount;
     const guestCount =
-      sectionCount > 0
-        ? sectionCount
-        : updateEventDto.guestCount ?? event.guestCount;
+      updateEventDto.guestCount ?? event.guestCount ?? dishCount;
     const quarterlyAdjustmentPercent =
       updateEventDto.quarterlyAdjustmentPercent ??
       event.quarterlyAdjustmentPercent;

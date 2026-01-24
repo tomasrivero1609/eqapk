@@ -13,11 +13,13 @@ const routesByRole: Record<UserRole, Array<{ key: string; label: string }>> = {
   [UserRole.ADMIN]: [
     { key: 'Events', label: 'Eventos' },
     { key: 'Clients', label: 'Clientes' },
+    { key: 'Demonstrations', label: 'Demostraciones' },
   ],
   [UserRole.SUPERADMIN]: [
     { key: 'Events', label: 'Eventos' },
     { key: 'Clients', label: 'Clientes' },
     { key: 'Admin', label: 'Ingresos' },
+    { key: 'Demonstrations', label: 'Demostraciones' },
   ],
 };
 
@@ -25,6 +27,7 @@ const actionDescriptions: Record<string, string> = {
   Events: 'Crea y gestiona eventos',
   Clients: 'Administra tus clientes',
   Admin: 'Revisa ingresos totales',
+  Demonstrations: 'Muestra los platos disponibles',
 };
 
 export default function RoleLandingScreen({ navigation }: any) {
@@ -143,7 +146,13 @@ export default function RoleLandingScreen({ navigation }: any) {
             {actions.map((item) => (
               <TouchableOpacity
                 key={item.key}
-                onPress={() => navigation.replace('MainTabs', { initialTab: item.key })}
+                onPress={() => {
+                  if (item.key === 'Demonstrations') {
+                    navigation.navigate('Demonstrations');
+                    return;
+                  }
+                  navigation.replace('MainTabs', { initialTab: item.key });
+                }}
                 className={isCompact ? 'w-full' : 'w-[48%]'}
               >
                 <Card className={isCompact ? 'h-24 justify-between' : 'h-28 justify-between'}>

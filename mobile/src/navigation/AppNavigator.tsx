@@ -6,6 +6,7 @@ import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RoleLandingScreen from '../screens/home/RoleLandingScreen';
+import DemonstrationsScreen from '../screens/home/DemonstrationsScreen';
 
 const Stack = createNativeStackNavigator();
 const AppDarkTheme = {
@@ -36,6 +37,7 @@ export default function AppNavigator() {
       {isAuthenticated ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="RoleLanding" component={RoleLandingScreen} />
+          <Stack.Screen name="Demonstrations" component={DemonstrationsScreen} />
           <Stack.Screen name="MainTabs" component={MainNavigator} />
         </Stack.Navigator>
       ) : (

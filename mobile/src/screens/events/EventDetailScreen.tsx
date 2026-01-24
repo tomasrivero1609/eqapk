@@ -79,7 +79,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
     (event.juvenileCount || 0) +
     (event.childCount || 0);
   const sectionData =
-    sectionTotal === 0 && event.dishCount > 0
+    sectionTotal === 0 && event.dishCount > 0 && event.pricePerDish > 0
       ? {
           adultCount: event.dishCount,
           juvenileCount: 0,
@@ -215,6 +215,9 @@ export default function EventDetailScreen({ route, navigation }: any) {
         <View className="mt-6 px-6">
           <Card>
             <Text className={`${isCompact ? 'text-xs' : 'text-sm'} font-semibold text-slate-400`}>Resumen</Text>
+            <Text className="mt-2 text-xs text-slate-500">
+              Platos contratados: {event.dishCount}
+            </Text>
             <View className="mt-4 flex-row justify-between">
               <View>
                 <Text className="text-xs text-slate-400">Adultos</Text>
