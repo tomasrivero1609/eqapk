@@ -9,6 +9,7 @@ import CreateEventScreen from '../screens/events/CreateEventScreen';
 import CreatePaymentScreen from '../screens/events/CreatePaymentScreen';
 import PaymentDetailScreen from '../screens/events/PaymentDetailScreen';
 import EventsCalendarScreen from '../screens/events/EventsCalendarScreen';
+import EventSpecsScreen from '../screens/events/EventSpecsScreen';
 import ClientsListScreen from '../screens/clients/ClientsListScreen';
 import CreateClientScreen from '../screens/clients/CreateClientScreen';
 import SelectClientScreen from '../screens/clients/SelectClientScreen';
@@ -47,6 +48,7 @@ function EventsStack({ isCompact }: { isCompact: boolean }) {
       <Stack.Screen name="EventsList" component={EventsListScreen} options={{ title: 'Eventos' }} />
       <Stack.Screen name="EventsCalendar" component={EventsCalendarScreen} options={{ title: 'Calendario' }} />
       <Stack.Screen name="EventDetail" component={EventDetailScreen} options={{ title: 'Detalle del evento' }} />
+      <Stack.Screen name="EventSpecs" component={EventSpecsScreen} options={{ title: 'Especificaciones técnicas' }} />
       <Stack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Nuevo evento' }} />
       <Stack.Screen name="CreatePayment" component={CreatePaymentScreen} options={{ title: 'Registrar pago' }} />
       <Stack.Screen name="PaymentDetail" component={PaymentDetailScreen} options={{ title: 'Detalle del pago' }} />

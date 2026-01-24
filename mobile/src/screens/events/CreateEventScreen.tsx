@@ -123,6 +123,7 @@ export default function CreateEventScreen({ navigation, route }: any) {
     partyEnd: '',
     specialDishes: '',
     cake: '',
+    familyMembers: '',
     hallSetupDescription: '',
     tablecloth: '',
     tableNumbers: '',
@@ -195,6 +196,7 @@ export default function CreateEventScreen({ navigation, route }: any) {
         partyEnd: event.partyEnd || '',
         specialDishes: event.specialDishes || '',
         cake: event.cake || '',
+        familyMembers: event.familyMembers || '',
         hallSetupDescription: event.hallSetupDescription || '',
         tablecloth: event.tablecloth || '',
         tableNumbers: event.tableNumbers || '',
@@ -347,6 +349,7 @@ export default function CreateEventScreen({ navigation, route }: any) {
       partyEnd: formData.partyEnd?.trim() || undefined,
       specialDishes: formData.specialDishes?.trim() || undefined,
       cake: formData.cake?.trim() || undefined,
+      familyMembers: formData.familyMembers?.trim() || undefined,
       hallSetupDescription: formData.hallSetupDescription?.trim() || undefined,
       tablecloth: formData.tablecloth?.trim() || undefined,
       tableNumbers: formData.tableNumbers?.trim() || undefined,
@@ -449,6 +452,13 @@ export default function CreateEventScreen({ navigation, route }: any) {
             placeholder="Describe el evento"
             value={formData.description}
             onChangeText={(text) => setFormData({ ...formData, description: text })}
+          />
+
+          <Input
+            label="Familiares"
+            placeholder="Padres y hermanos"
+            value={formData.familyMembers}
+            onChangeText={(text) => setFormData({ ...formData, familyMembers: text })}
           />
 
           <View className="flex-row items-center justify-between">
@@ -783,154 +793,6 @@ export default function CreateEventScreen({ navigation, route }: any) {
                       : 0,
                   }))
                 }
-              />
-            </View>
-          </Card>
-
-          <Card>
-            <Text className="text-sm font-semibold text-slate-300">
-              Especificaciones del evento
-            </Text>
-            <View className="mt-3 space-y-3">
-              <Input
-                label="Descripción de menú"
-                placeholder="Detalle del menú"
-                value={formData.menuDescription}
-                onChangeText={(text) => setFormData({ ...formData, menuDescription: text })}
-                multiline
-              />
-              <Input
-                label="Cantidad de horas del evento"
-                placeholder="Ej: 5"
-                value={formData.eventHours}
-                onChangeText={(text) => setFormData({ ...formData, eventHours: text })}
-              />
-              <Input
-                label="Tipo de recepción"
-                placeholder="Ej: Formal / Informal"
-                value={formData.receptionType}
-                onChangeText={(text) => setFormData({ ...formData, receptionType: text })}
-              />
-              <Input
-                label="Cantidad de platos (Adulto)"
-                placeholder="Primer plato - plato principal"
-                value={formData.courseCountAdult}
-                onChangeText={(text) => setFormData({ ...formData, courseCountAdult: text })}
-              />
-              <Input
-                label="Cantidad de platos (Juvenil)"
-                placeholder="Primer plato - plato principal"
-                value={formData.courseCountJuvenile}
-                onChangeText={(text) => setFormData({ ...formData, courseCountJuvenile: text })}
-              />
-              <Input
-                label="Cantidad de platos (Infantil)"
-                placeholder="Primer plato - plato principal"
-                value={formData.courseCountChild}
-                onChangeText={(text) => setFormData({ ...formData, courseCountChild: text })}
-              />
-              <Input
-                label="Tipo de isla"
-                placeholder="Detalle"
-                value={formData.islandType}
-                onChangeText={(text) => setFormData({ ...formData, islandType: text })}
-              />
-              <Input
-                label="Postre"
-                placeholder="Detalle"
-                value={formData.dessert}
-                onChangeText={(text) => setFormData({ ...formData, dessert: text })}
-              />
-              <Input
-                label="Mesa dulce"
-                placeholder="Detalle"
-                value={formData.sweetTable}
-                onChangeText={(text) => setFormData({ ...formData, sweetTable: text })}
-              />
-              <Input
-                label="Fin de fiesta"
-                placeholder="Detalle"
-                value={formData.partyEnd}
-                onChangeText={(text) => setFormData({ ...formData, partyEnd: text })}
-              />
-              <Input
-                label="Platos especial"
-                placeholder="Detalle"
-                value={formData.specialDishes}
-                onChangeText={(text) => setFormData({ ...formData, specialDishes: text })}
-              />
-              <Input
-                label="Torta"
-                placeholder="Detalle"
-                value={formData.cake}
-                onChangeText={(text) => setFormData({ ...formData, cake: text })}
-              />
-              <Input
-                label="Descripción armado de salón"
-                placeholder="Detalle"
-                value={formData.hallSetupDescription}
-                onChangeText={(text) => setFormData({ ...formData, hallSetupDescription: text })}
-                multiline
-              />
-              <Input
-                label="Manteleria"
-                placeholder="Detalle"
-                value={formData.tablecloth}
-                onChangeText={(text) => setFormData({ ...formData, tablecloth: text })}
-              />
-              <Input
-                label="Numeradores de mesa"
-                placeholder="Detalle"
-                value={formData.tableNumbers}
-                onChangeText={(text) => setFormData({ ...formData, tableNumbers: text })}
-              />
-              <Input
-                label="Centros de mesa"
-                placeholder="Detalle"
-                value={formData.centerpieces}
-                onChangeText={(text) => setFormData({ ...formData, centerpieces: text })}
-              />
-              <Input
-                label="Souvenirs"
-                placeholder="Detalle"
-                value={formData.souvenirs}
-                onChangeText={(text) => setFormData({ ...formData, souvenirs: text })}
-              />
-              <Input
-                label="Ramo"
-                placeholder="Detalle"
-                value={formData.bouquet}
-                onChangeText={(text) => setFormData({ ...formData, bouquet: text })}
-              />
-              <Input
-                label="Velas"
-                placeholder="Detalle"
-                value={formData.candles}
-                onChangeText={(text) => setFormData({ ...formData, candles: text })}
-              />
-              <Input
-                label="Dijes"
-                placeholder="Detalle"
-                value={formData.charms}
-                onChangeText={(text) => setFormData({ ...formData, charms: text })}
-              />
-              <Input
-                label="Rosas"
-                placeholder="Detalle"
-                value={formData.roses}
-                onChangeText={(text) => setFormData({ ...formData, roses: text })}
-              />
-              <Input
-                label="Cotillón"
-                placeholder="Detalle"
-                value={formData.cotillon}
-                onChangeText={(text) => setFormData({ ...formData, cotillon: text })}
-              />
-              <Input
-                label="Fotógrafo"
-                placeholder="Detalle"
-                value={formData.photographer}
-                onChangeText={(text) => setFormData({ ...formData, photographer: text })}
               />
             </View>
           </Card>

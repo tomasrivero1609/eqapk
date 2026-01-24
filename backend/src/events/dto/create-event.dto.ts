@@ -147,6 +147,10 @@ export class CreateEventDto {
 
   @IsOptional()
   @IsString()
+  familyMembers?: string;
+
+  @IsOptional()
+  @IsString()
   hallSetupDescription?: string;
 
   @IsOptional()

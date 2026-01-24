@@ -105,12 +105,10 @@ export default function EventDetailScreen({ route, navigation }: any) {
       const adult = hasSections ? payment.adultCovered || 0 : payment.platesCovered || 0;
       const juvenile = hasSections ? payment.juvenileCovered || 0 : 0;
       const child = hasSections ? payment.childCovered || 0 : 0;
-      const adultPrice =
-        payment.adultPriceAtPayment ?? sectionData.adultPrice;
+      const adultPrice = payment.adultPriceAtPayment ?? sectionData.adultPrice;
       const juvenilePrice =
         payment.juvenilePriceAtPayment ?? sectionData.juvenilePrice;
-      const childPrice =
-        payment.childPriceAtPayment ?? sectionData.childPrice;
+      const childPrice = payment.childPriceAtPayment ?? sectionData.childPrice;
       acc.adultCovered += adult;
       acc.juvenileCovered += juvenile;
       acc.childCovered += child;
@@ -203,8 +201,13 @@ export default function EventDetailScreen({ route, navigation }: any) {
               Cliente: {event.client.name}
             </Text>
           ) : null}
+          {event.familyMembers ? (
+            <Text className={`${isCompact ? 'text-xs' : 'text-sm'} mt-1 text-slate-400`}>
+              Familiares: {event.familyMembers}
+            </Text>
+          ) : null}
           <Text className={`${isCompact ? 'text-xs' : 'text-sm'} mt-2 text-slate-400`}>
-            {formatLocalDate(event.date)} · {event.startTime}
+            {formatLocalDate(event.date)} - {event.startTime}
             {event.endTime ? ` - ${event.endTime}` : ''}
           </Text>
         </View>
@@ -282,6 +285,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
             </View>
           </Card>
         </View>
+
         {isOverdue && (
           <View className="mt-4 px-6">
             <Card className="border border-rose-500/30 bg-rose-500/10">
@@ -295,10 +299,16 @@ export default function EventDetailScreen({ route, navigation }: any) {
           </View>
         )}
 
-        {event.quarterlyAdjustmentEnabled &&
-          event.quarterlyAdjustmentPercent > 0 && (
-            <View className="mt-4 px-6">
-              <Card>
+        <View className="mt-4 px-6 space-y-4">
+          <Button
+            label="Especificaciones tecnicas"
+            variant="secondary"
+            onPress={() => navigation.navigate('EventSpecs', { event })}
+          />
+
+          {event.quarterlyAdjustmentEnabled &&
+            event.quarterlyAdjustmentPercent > 0 && (
+              <Card className="mt-2">
                 <Text className="text-sm font-semibold text-slate-100">
                   Ajuste trimestral ({event.quarterlyAdjustmentPercent}%)
                 </Text>
@@ -328,157 +338,8 @@ export default function EventDetailScreen({ route, navigation }: any) {
                   />
                 </View>
               </Card>
-            </View>
-          )}
-
-        {(event.menuDescription ||
-          event.eventHours ||
-          event.receptionType ||
-          event.courseCountAdult ||
-          event.courseCountJuvenile ||
-          event.courseCountChild ||
-          event.islandType ||
-          event.dessert ||
-          event.sweetTable ||
-          event.partyEnd ||
-          event.specialDishes ||
-          event.cake ||
-          event.hallSetupDescription ||
-          event.tablecloth ||
-          event.tableNumbers ||
-          event.centerpieces ||
-          event.souvenirs ||
-          event.bouquet ||
-          event.candles ||
-          event.charms ||
-          event.roses ||
-          event.cotillon ||
-          event.photographer) && (
-          <View className="mt-6 px-6">
-            <Card>
-              <Text className="text-xs font-semibold text-slate-400">
-                Especificaciones del evento
-              </Text>
-              <View className="mt-3 space-y-2">
-                {event.menuDescription ? (
-                  <Text className="text-sm text-slate-300">
-                    Menú: {event.menuDescription}
-                  </Text>
-                ) : null}
-                {event.eventHours ? (
-                  <Text className="text-sm text-slate-300">
-                    Horas: {event.eventHours}
-                  </Text>
-                ) : null}
-                {event.receptionType ? (
-                  <Text className="text-sm text-slate-300">
-                    Recepción: {event.receptionType}
-                  </Text>
-                ) : null}
-                {event.courseCountAdult ? (
-                  <Text className="text-sm text-slate-300">
-                    Platos adulto: {event.courseCountAdult}
-                  </Text>
-                ) : null}
-                {event.courseCountJuvenile ? (
-                  <Text className="text-sm text-slate-300">
-                    Platos juvenil: {event.courseCountJuvenile}
-                  </Text>
-                ) : null}
-                {event.courseCountChild ? (
-                  <Text className="text-sm text-slate-300">
-                    Platos infantil: {event.courseCountChild}
-                  </Text>
-                ) : null}
-                {event.islandType ? (
-                  <Text className="text-sm text-slate-300">
-                    Tipo de isla: {event.islandType}
-                  </Text>
-                ) : null}
-                {event.dessert ? (
-                  <Text className="text-sm text-slate-300">
-                    Postre: {event.dessert}
-                  </Text>
-                ) : null}
-                {event.sweetTable ? (
-                  <Text className="text-sm text-slate-300">
-                    Mesa dulce: {event.sweetTable}
-                  </Text>
-                ) : null}
-                {event.partyEnd ? (
-                  <Text className="text-sm text-slate-300">
-                    Fin de fiesta: {event.partyEnd}
-                  </Text>
-                ) : null}
-                {event.specialDishes ? (
-                  <Text className="text-sm text-slate-300">
-                    Platos especiales: {event.specialDishes}
-                  </Text>
-                ) : null}
-                {event.cake ? (
-                  <Text className="text-sm text-slate-300">
-                    Torta: {event.cake}
-                  </Text>
-                ) : null}
-                {event.hallSetupDescription ? (
-                  <Text className="text-sm text-slate-300">
-                    Armado salón: {event.hallSetupDescription}
-                  </Text>
-                ) : null}
-                {event.tablecloth ? (
-                  <Text className="text-sm text-slate-300">
-                    Manteleria: {event.tablecloth}
-                  </Text>
-                ) : null}
-                {event.tableNumbers ? (
-                  <Text className="text-sm text-slate-300">
-                    Numeradores: {event.tableNumbers}
-                  </Text>
-                ) : null}
-                {event.centerpieces ? (
-                  <Text className="text-sm text-slate-300">
-                    Centros de mesa: {event.centerpieces}
-                  </Text>
-                ) : null}
-                {event.souvenirs ? (
-                  <Text className="text-sm text-slate-300">
-                    Souvenirs: {event.souvenirs}
-                  </Text>
-                ) : null}
-                {event.bouquet ? (
-                  <Text className="text-sm text-slate-300">
-                    Ramo: {event.bouquet}
-                  </Text>
-                ) : null}
-                {event.candles ? (
-                  <Text className="text-sm text-slate-300">
-                    Velas: {event.candles}
-                  </Text>
-                ) : null}
-                {event.charms ? (
-                  <Text className="text-sm text-slate-300">
-                    Dijes: {event.charms}
-                  </Text>
-                ) : null}
-                {event.roses ? (
-                  <Text className="text-sm text-slate-300">
-                    Rosas: {event.roses}
-                  </Text>
-                ) : null}
-                {event.cotillon ? (
-                  <Text className="text-sm text-slate-300">
-                    Cotillón: {event.cotillon}
-                  </Text>
-                ) : null}
-                {event.photographer ? (
-                  <Text className="text-sm text-slate-300">
-                    Fotógrafo: {event.photographer}
-                  </Text>
-                ) : null}
-              </View>
-            </Card>
-          </View>
-        )}
+            )}
+        </View>
 
         {(event.description || event.notes) && (
           <View className="mt-6 px-6">
@@ -664,31 +525,31 @@ export default function EventDetailScreen({ route, navigation }: any) {
             ) : adjustmentPreview ? (
               <>
                 <Text className="mt-2 text-xs text-slate-400">
-                  Precios actuales → nuevos
+                  Precios actuales a nuevos
                 </Text>
                 <View className="mt-3 space-y-2">
                   <Text className="text-sm text-slate-200">
-                    Adulto: {formatCurrency(adjustmentPreview.currentPrices.adult, event.currency)} →{' '}
+                    Adulto: {formatCurrency(adjustmentPreview.currentPrices.adult, event.currency)} a{' '}
                     {formatCurrency(adjustmentPreview.newPrices.adult, event.currency)}
                   </Text>
                   <Text className="text-sm text-slate-200">
-                    Juvenil: {formatCurrency(adjustmentPreview.currentPrices.juvenile, event.currency)} →{' '}
+                    Juvenil: {formatCurrency(adjustmentPreview.currentPrices.juvenile, event.currency)} a{' '}
                     {formatCurrency(adjustmentPreview.newPrices.juvenile, event.currency)}
                   </Text>
                   <Text className="text-sm text-slate-200">
-                    Infantil: {formatCurrency(adjustmentPreview.currentPrices.child, event.currency)} →{' '}
+                    Infantil: {formatCurrency(adjustmentPreview.currentPrices.child, event.currency)} a{' '}
                     {formatCurrency(adjustmentPreview.newPrices.child, event.currency)}
                   </Text>
                 </View>
-              {!adjustmentPreview.eligible && (
-                <Text className="mt-3 text-xs text-amber-300">
-                  Disponible desde {new Date(adjustmentPreview.nextEligibleAt).toLocaleDateString('es-AR')}.
-                </Text>
-              )}
-            </>
-          ) : (
-            <Text className="mt-2 text-sm text-slate-400">Cargando...</Text>
-          )}
+                {!adjustmentPreview.eligible && (
+                  <Text className="mt-3 text-xs text-amber-300">
+                    Disponible desde {new Date(adjustmentPreview.nextEligibleAt).toLocaleDateString('es-AR')}.
+                  </Text>
+                )}
+              </>
+            ) : (
+              <Text className="mt-2 text-sm text-slate-400">Cargando...</Text>
+            )}
           <View className="mt-4 space-y-2">
             <Button label="Cerrar" variant="secondary" onPress={() => setShowAdjustmentModal(false)} />
             <Button

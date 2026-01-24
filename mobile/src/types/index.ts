@@ -54,6 +54,7 @@ export interface Event {
   partyEnd?: string;
   specialDishes?: string;
   cake?: string;
+  familyMembers?: string;
   hallSetupDescription?: string;
   tablecloth?: string;
   tableNumbers?: string;
@@ -127,6 +128,7 @@ export interface CreateEventDto {
   partyEnd?: string;
   specialDishes?: string;
   cake?: string;
+  familyMembers?: string;
   hallSetupDescription?: string;
   tablecloth?: string;
   tableNumbers?: string;

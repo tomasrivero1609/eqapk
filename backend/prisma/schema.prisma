@@ -67,6 +67,7 @@ model Event {
   partyEnd String?
   specialDishes String?
   cake String?
+  familyMembers String?
   hallSetupDescription String?
   tablecloth String?
   tableNumbers String?

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import Screen from '../../components/ui/Screen';
 import Card from '../../components/ui/Card';
@@ -37,6 +37,8 @@ export default function EventsCalendarScreen({ navigation }: any) {
     queryKey: ['events'],
     queryFn: () => eventService.getAll(),
   });
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
 
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(
@@ -107,7 +109,10 @@ export default function EventsCalendarScreen({ navigation }: any) {
 
             <View className="mt-4 flex-row justify-between">
               {weekDays.map((day, index) => (
-                <Text key={`${day}-${index}`} className="w-[13%] text-center text-xs text-slate-400">
+                <Text
+                  key={`${day}-${index}`}
+                  className={`${isTablet ? 'text-sm' : 'text-xs'} w-[13%] text-center text-slate-400`}
+                >
                   {day}
                 </Text>
               ))}
@@ -116,7 +121,12 @@ export default function EventsCalendarScreen({ navigation }: any) {
             <View className="mt-2 flex-row flex-wrap">
               {monthCells.map((date, index) => {
                 if (!date) {
-                  return <View key={`empty-${index}`} className="w-[13%] h-10" />;
+                  return (
+                    <View
+                      key={`empty-${index}`}
+                      className={`w-[13%] ${isTablet ? 'h-12' : 'h-10'}`}
+                    />
+                  );
                 }
                 const key = toDateKey(date);
                 const hasEvents = eventsByDay.has(key);
@@ -125,21 +135,33 @@ export default function EventsCalendarScreen({ navigation }: any) {
                   <TouchableOpacity
                     key={key}
                     onPress={() => setSelectedDate(date)}
-                    className={`w-[13%] h-10 items-center justify-center rounded-full ${
-                      isSelected ? 'bg-violet-500/30' : ''
+                    className={`w-[13%] ${
+                      isTablet ? 'h-12' : 'h-10'
+                    } items-center justify-center rounded-2xl ${
+                      isSelected
+                        ? 'bg-violet-500/30'
+                        : hasEvents
+                        ? 'bg-rose-500/25'
+                        : ''
                     }`}
                   >
                     <Text
-                      className={`text-sm ${
+                      className={`${isTablet ? 'text-base' : 'text-sm'} ${
                         isSelected
                           ? 'text-violet-100 font-semibold'
+                          : hasEvents
+                          ? 'text-rose-100 font-semibold'
                           : 'text-slate-200'
                       }`}
                     >
                       {date.getDate()}
                     </Text>
                     {hasEvents ? (
-                      <View className="mt-1 h-1 w-1 rounded-full bg-emerald-400" />
+                      <View
+                        className={`mt-1 rounded-full bg-rose-300 ${
+                          isTablet ? 'h-2 w-2' : 'h-1.5 w-1.5'
+                        }`}
+                      />
                     ) : null}
                   </TouchableOpacity>
                 );
