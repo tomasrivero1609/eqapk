@@ -1,6 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert, useWindowDimensions, Modal } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  Alert,
+  useWindowDimensions,
+  Modal,
+  Platform,
+} from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 import { eventService } from '../../services/eventService';
 import { dolarService } from '../../services/dolarService';
 import Screen from '../../components/ui/Screen';
@@ -11,6 +23,15 @@ import { Payment } from '../../types';
 import { formatCurrency } from '../../utils/format';
 import { convertAmount } from '../../utils/currency';
 import { formatLocalDate } from '../../utils/date';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 const daysSince = (date: Date) => {
   const now = Date.now();
@@ -47,6 +68,27 @@ export default function EventDetailScreen({ route, navigation }: any) {
   const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
   const [adjustmentPreview, setAdjustmentPreview] = useState<any>(null);
   const [adjustmentError, setAdjustmentError] = useState<string | null>(null);
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [reminderDate, setReminderDate] = useState<Date>(new Date());
+  const [reminderInfo, setReminderInfo] = useState<{
+    ids: string[];
+    date: string;
+  } | null>(null);
+  const reminderKey = `event-adjustment-reminders:${eventId}`;
+
+  useEffect(() => {
+    const loadReminder = async () => {
+      try {
+        const stored = await AsyncStorage.getItem(reminderKey);
+        if (stored) {
+          setReminderInfo(JSON.parse(stored));
+        }
+      } catch {
+        setReminderInfo(null);
+      }
+    };
+    loadReminder();
+  }, [reminderKey]);
 
   if (isLoading) {
     return (
@@ -149,6 +191,86 @@ export default function EventDetailScreen({ route, navigation }: any) {
   const lastPayment = getLastPaymentDate(payments);
   const overdueReference = lastPayment || new Date(event.createdAt);
   const isOverdue = daysSince(overdueReference) >= 30;
+
+  const ensureNotificationPermissions = async () => {
+    const settings = await Notifications.getPermissionsAsync();
+    if (settings.status !== 'granted') {
+      const result = await Notifications.requestPermissionsAsync();
+      if (result.status !== 'granted') {
+        Alert.alert(
+          'Permisos requeridos',
+          'Necesitas habilitar notificaciones para recibir avisos.',
+        );
+        return false;
+      }
+    }
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('reminders', {
+        name: 'Recordatorios',
+        importance: Notifications.AndroidImportance.DEFAULT,
+      });
+    }
+    return true;
+  };
+
+  const scheduleAdjustmentReminders = async () => {
+    if (!event) {
+      return;
+    }
+    if (reminderDate.getTime() <= Date.now()) {
+      Alert.alert('Fecha invalida', 'Elige una fecha futura para el aviso.');
+      return;
+    }
+    try {
+      const ok = await ensureNotificationPermissions();
+      if (!ok) {
+        return;
+      }
+      const ids: string[] = [];
+      for (let i = 0; i < 30; i += 1) {
+        const triggerDate = new Date(reminderDate);
+        triggerDate.setDate(triggerDate.getDate() + i);
+        const trigger: Notifications.NotificationTriggerInput = {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: triggerDate,
+        };
+        if (Platform.OS === 'android') {
+          (trigger as any).channelId = 'reminders';
+        }
+        const id = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: 'Ajuste trimestral',
+            body: `Notificacion por proximo ajuste trimestral para el evento ${event.name}.`,
+            data: { eventId: event.id },
+          },
+          trigger,
+        } as any);
+        ids.push(id);
+      }
+      const payload = { ids, date: reminderDate.toISOString() };
+      await AsyncStorage.setItem(reminderKey, JSON.stringify(payload));
+      setReminderInfo(payload);
+      setShowReminderModal(false);
+      Alert.alert('Listo', 'Aviso programado una vez por dia (30 dias).');
+    } catch (error: any) {
+      Alert.alert(
+        'Error',
+        error?.message || 'No se pudo programar el aviso.',
+      );
+    }
+  };
+
+  const cancelAdjustmentReminders = async () => {
+    if (!reminderInfo?.ids?.length) {
+      return;
+    }
+    await Promise.all(
+      reminderInfo.ids.map((id) => Notifications.cancelScheduledNotificationAsync(id)),
+    );
+    await AsyncStorage.removeItem(reminderKey);
+    setReminderInfo(null);
+    Alert.alert('Listo', 'Aviso desactivado.');
+  };
 
   const handleQuarterlyAdjustment = async () => {
     if (!event) {
@@ -339,6 +461,31 @@ export default function EventDetailScreen({ route, navigation }: any) {
                     onPress={handleQuarterlyAdjustment}
                     loading={isAdjusting}
                   />
+                </View>
+                <View className="mt-2">
+                  {reminderInfo ? (
+                    <>
+                      <Text className="text-xs text-slate-500">
+                        Aviso diario desde {new Date(reminderInfo.date).toLocaleDateString('es-AR')}
+                      </Text>
+                      <View className="mt-2">
+                        <Button
+                          label="Desactivar aviso"
+                          variant="ghost"
+                          onPress={cancelAdjustmentReminders}
+                        />
+                      </View>
+                    </>
+                  ) : (
+                    <Button
+                      label="Programar aviso diario"
+                      variant="secondary"
+                      onPress={() => {
+                        setReminderDate(new Date(Date.now() + 10 * 60 * 1000));
+                        setShowReminderModal(true);
+                      }}
+                    />
+                  )}
                 </View>
               </Card>
             )}
@@ -561,6 +708,39 @@ export default function EventDetailScreen({ route, navigation }: any) {
               loading={isAdjusting}
             />
           </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showReminderModal} transparent animationType="fade">
+        <View className="flex-1 items-center justify-center bg-black/60 px-6">
+          <View className="w-full rounded-3xl bg-slate-900 p-4">
+            <Text className="text-base font-semibold text-slate-100">
+              Programar aviso
+            </Text>
+            <Text className="mt-2 text-xs text-slate-400">
+              Se envia una vez por dia durante 30 dias desde la fecha elegida.
+            </Text>
+            <View className="mt-3">
+              <DateTimePicker
+                value={reminderDate}
+                mode="datetime"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(_, selectedDate) => {
+                  if (selectedDate) {
+                    setReminderDate(selectedDate);
+                  }
+                }}
+              />
+            </View>
+            <View className="mt-4 space-y-2">
+              <Button
+                label="Cancelar"
+                variant="secondary"
+                onPress={() => setShowReminderModal(false)}
+              />
+              <Button label="Guardar aviso" onPress={scheduleAdjustmentReminders} />
+            </View>
           </View>
         </View>
       </Modal>
