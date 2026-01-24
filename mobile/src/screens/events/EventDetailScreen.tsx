@@ -334,7 +334,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
           </Text>
         </View>
 
-        <View className="mt-6 px-6">
+        <View className="mt-8 px-6">
           <Card>
             <Text className={`${isCompact ? 'text-xs' : 'text-sm'} font-semibold text-slate-400`}>Resumen</Text>
             <Text className="mt-2 text-xs text-slate-500">
@@ -462,13 +462,13 @@ export default function EventDetailScreen({ route, navigation }: any) {
                     loading={isAdjusting}
                   />
                 </View>
-                <View className="mt-2">
+                <View className="mt-4">
                   {reminderInfo ? (
                     <>
-                      <Text className="text-xs text-slate-500">
+                      <Text className="text-sm font-semibold text-slate-300">
                         Aviso diario desde {new Date(reminderInfo.date).toLocaleDateString('es-AR')}
                       </Text>
-                      <View className="mt-2">
+                      <View className="mt-3">
                         <Button
                           label="Desactivar aviso"
                           variant="ghost"
@@ -534,10 +534,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
           </View>
           {payments.length === 0 ? (
             <View className="mt-4">
-              <EmptyState
-                title="Sin pagos registrados"
-                description="Agrega el primer pago del evento"
-              />
+              <EmptyState title="No hay pagos registrados" />
             </View>
           ) : (
             <>
@@ -626,22 +623,27 @@ export default function EventDetailScreen({ route, navigation }: any) {
           )}
         </View>
 
-        <View className="mt-6 px-6 space-y-3">
-          <Button
-            label="Editar evento"
-            variant="secondary"
-            onPress={() => navigation.navigate('CreateEvent', { eventId: event.id })}
-          />
-
-          <Button
-            label="Eliminar evento"
-            variant="ghost"
-            onPress={() => {
-              Alert.alert(
-                'Eliminar evento',
-                'Esta accion no se puede deshacer. Quieres eliminarlo?',
-                [
-                  { text: 'Cancelar', style: 'cancel' },
+        <View className="mt-6 px-6">
+          <View className="flex-row gap-3">
+            <View className="flex-1">
+              <Button
+                label="Editar"
+                variant="primary"
+                iconName="pencil"
+                onPress={() => navigation.navigate('CreateEvent', { eventId: event.id })}
+              />
+            </View>
+            <View className="flex-1">
+              <Button
+                label="Eliminar"
+                variant="danger"
+                iconName="trash"
+                onPress={() => {
+                Alert.alert(
+                  'Eliminar evento',
+                  'Esta accion no se puede deshacer. Quieres eliminarlo?',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
                   {
                     text: 'Eliminar',
                     style: 'destructive',
@@ -659,8 +661,10 @@ export default function EventDetailScreen({ route, navigation }: any) {
                   },
                 ],
               );
-            }}
-          />
+                }}
+              />
+            </View>
+          </View>
         </View>
       </ScrollView>
 
@@ -724,22 +728,24 @@ export default function EventDetailScreen({ route, navigation }: any) {
             <View className="mt-3">
               <DateTimePicker
                 value={reminderDate}
-                mode="datetime"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
                 onChange={(_, selectedDate) => {
                   if (selectedDate) {
-                    setReminderDate(selectedDate);
+                    const next = new Date(selectedDate);
+                    next.setHours(reminderDate.getHours(), reminderDate.getMinutes(), 0, 0);
+                    setReminderDate(next);
                   }
                 }}
               />
             </View>
-            <View className="mt-4 space-y-2">
+            <View className="mt-7 space-y-5">
+              <Button label="Guardar aviso" onPress={scheduleAdjustmentReminders} />
               <Button
                 label="Cancelar"
                 variant="secondary"
                 onPress={() => setShowReminderModal(false)}
               />
-              <Button label="Guardar aviso" onPress={scheduleAdjustmentReminders} />
             </View>
           </View>
         </View>
