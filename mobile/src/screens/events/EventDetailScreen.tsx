@@ -331,6 +331,155 @@ export default function EventDetailScreen({ route, navigation }: any) {
             </View>
           )}
 
+        {(event.menuDescription ||
+          event.eventHours ||
+          event.receptionType ||
+          event.courseCountAdult ||
+          event.courseCountJuvenile ||
+          event.courseCountChild ||
+          event.islandType ||
+          event.dessert ||
+          event.sweetTable ||
+          event.partyEnd ||
+          event.specialDishes ||
+          event.cake ||
+          event.hallSetupDescription ||
+          event.tablecloth ||
+          event.tableNumbers ||
+          event.centerpieces ||
+          event.souvenirs ||
+          event.bouquet ||
+          event.candles ||
+          event.charms ||
+          event.roses ||
+          event.cotillon ||
+          event.photographer) && (
+          <View className="mt-6 px-6">
+            <Card>
+              <Text className="text-xs font-semibold text-slate-400">
+                Especificaciones del evento
+              </Text>
+              <View className="mt-3 space-y-2">
+                {event.menuDescription ? (
+                  <Text className="text-sm text-slate-300">
+                    Menú: {event.menuDescription}
+                  </Text>
+                ) : null}
+                {event.eventHours ? (
+                  <Text className="text-sm text-slate-300">
+                    Horas: {event.eventHours}
+                  </Text>
+                ) : null}
+                {event.receptionType ? (
+                  <Text className="text-sm text-slate-300">
+                    Recepción: {event.receptionType}
+                  </Text>
+                ) : null}
+                {event.courseCountAdult ? (
+                  <Text className="text-sm text-slate-300">
+                    Platos adulto: {event.courseCountAdult}
+                  </Text>
+                ) : null}
+                {event.courseCountJuvenile ? (
+                  <Text className="text-sm text-slate-300">
+                    Platos juvenil: {event.courseCountJuvenile}
+                  </Text>
+                ) : null}
+                {event.courseCountChild ? (
+                  <Text className="text-sm text-slate-300">
+                    Platos infantil: {event.courseCountChild}
+                  </Text>
+                ) : null}
+                {event.islandType ? (
+                  <Text className="text-sm text-slate-300">
+                    Tipo de isla: {event.islandType}
+                  </Text>
+                ) : null}
+                {event.dessert ? (
+                  <Text className="text-sm text-slate-300">
+                    Postre: {event.dessert}
+                  </Text>
+                ) : null}
+                {event.sweetTable ? (
+                  <Text className="text-sm text-slate-300">
+                    Mesa dulce: {event.sweetTable}
+                  </Text>
+                ) : null}
+                {event.partyEnd ? (
+                  <Text className="text-sm text-slate-300">
+                    Fin de fiesta: {event.partyEnd}
+                  </Text>
+                ) : null}
+                {event.specialDishes ? (
+                  <Text className="text-sm text-slate-300">
+                    Platos especiales: {event.specialDishes}
+                  </Text>
+                ) : null}
+                {event.cake ? (
+                  <Text className="text-sm text-slate-300">
+                    Torta: {event.cake}
+                  </Text>
+                ) : null}
+                {event.hallSetupDescription ? (
+                  <Text className="text-sm text-slate-300">
+                    Armado salón: {event.hallSetupDescription}
+                  </Text>
+                ) : null}
+                {event.tablecloth ? (
+                  <Text className="text-sm text-slate-300">
+                    Manteleria: {event.tablecloth}
+                  </Text>
+                ) : null}
+                {event.tableNumbers ? (
+                  <Text className="text-sm text-slate-300">
+                    Numeradores: {event.tableNumbers}
+                  </Text>
+                ) : null}
+                {event.centerpieces ? (
+                  <Text className="text-sm text-slate-300">
+                    Centros de mesa: {event.centerpieces}
+                  </Text>
+                ) : null}
+                {event.souvenirs ? (
+                  <Text className="text-sm text-slate-300">
+                    Souvenirs: {event.souvenirs}
+                  </Text>
+                ) : null}
+                {event.bouquet ? (
+                  <Text className="text-sm text-slate-300">
+                    Ramo: {event.bouquet}
+                  </Text>
+                ) : null}
+                {event.candles ? (
+                  <Text className="text-sm text-slate-300">
+                    Velas: {event.candles}
+                  </Text>
+                ) : null}
+                {event.charms ? (
+                  <Text className="text-sm text-slate-300">
+                    Dijes: {event.charms}
+                  </Text>
+                ) : null}
+                {event.roses ? (
+                  <Text className="text-sm text-slate-300">
+                    Rosas: {event.roses}
+                  </Text>
+                ) : null}
+                {event.cotillon ? (
+                  <Text className="text-sm text-slate-300">
+                    Cotillón: {event.cotillon}
+                  </Text>
+                ) : null}
+                {event.photographer ? (
+                  <Text className="text-sm text-slate-300">
+                    Fotógrafo: {event.photographer}
+                  </Text>
+                ) : null}
+              </View>
+            </Card>
+          </View>
+        )}
+
         {(event.description || event.notes) && (
           <View className="mt-6 px-6">
             <Card>

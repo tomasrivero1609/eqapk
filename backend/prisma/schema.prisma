@@ -55,6 +55,29 @@ model Event {
   quarterlyAdjustmentPercent Float @default(0)
   quarterlyAdjustmentEnabled Boolean @default(false)
   lastAdjustmentAt DateTime?
+  menuDescription String?
+  eventHours String?
+  receptionType String?
+  courseCountAdult String?
+  courseCountJuvenile String?
+  courseCountChild String?
+  islandType String?
+  dessert String?
+  sweetTable String?
+  partyEnd String?
+  specialDishes String?
+  cake String?
+  hallSetupDescription String?
+  tablecloth String?
+  tableNumbers String?
+  centerpieces String?
+  souvenirs String?
+  bouquet String?
+  candles String?
+  charms String?
+  roses String?
+  cotillon String?
+  photographer String?
   currency    Currency   @default(ARS)
   totalAmount Float
   capacity    Int?

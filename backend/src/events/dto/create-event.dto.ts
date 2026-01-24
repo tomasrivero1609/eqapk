@@ -96,4 +96,96 @@ export class CreateEventDto {
   @IsNumber()
   @Min(0)
   quarterlyAdjustmentPercent?: number;
+
+  @IsOptional()
+  @IsString()
+  menuDescription?: string;
+
+  @IsOptional()
+  @IsString()
+  eventHours?: string;
+
+  @IsOptional()
+  @IsString()
+  receptionType?: string;
+
+  @IsOptional()
+  @IsString()
+  courseCountAdult?: string;
+
+  @IsOptional()
+  @IsString()
+  courseCountJuvenile?: string;
+
+  @IsOptional()
+  @IsString()
+  courseCountChild?: string;
+
+  @IsOptional()
+  @IsString()
+  islandType?: string;
+
+  @IsOptional()
+  @IsString()
+  dessert?: string;
+
+  @IsOptional()
+  @IsString()
+  sweetTable?: string;
+
+  @IsOptional()
+  @IsString()
+  partyEnd?: string;
+
+  @IsOptional()
+  @IsString()
+  specialDishes?: string;
+
+  @IsOptional()
+  @IsString()
+  cake?: string;
+
+  @IsOptional()
+  @IsString()
+  hallSetupDescription?: string;
+
+  @IsOptional()
+  @IsString()
+  tablecloth?: string;
+
+  @IsOptional()
+  @IsString()
+  tableNumbers?: string;
+
+  @IsOptional()
+  @IsString()
+  centerpieces?: string;
+
+  @IsOptional()
+  @IsString()
+  souvenirs?: string;
+
+  @IsOptional()
+  @IsString()
+  bouquet?: string;
+
+  @IsOptional()
+  @IsString()
+  candles?: string;
+
+  @IsOptional()
+  @IsString()
+  charms?: string;
+
+  @IsOptional()
+  @IsString()
+  roses?: string;
+
+  @IsOptional()
+  @IsString()
+  cotillon?: string;
+
+  @IsOptional()
+  @IsString()
+  photographer?: string;
 }
