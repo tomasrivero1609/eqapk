@@ -292,13 +292,22 @@ export default function EventSpecsScreen({ route }: any) {
                   setFormData((prev) => ({ ...prev, photographer: text }))
                 }
               />
+            </View>
+          </Card>
+
+          <Card>
+            <Text className="text-xs font-semibold text-slate-400">
+              Opcional contratado
+            </Text>
+            <View className="mt-3">
               <Input
-                label="Opcional contratado"
-                placeholder="Detalle"
+                label="Detalle"
+                placeholder="Ej: show en vivo, cabina 360, etc."
                 value={formData.optionalContracted}
                 onChangeText={(text) =>
                   setFormData((prev) => ({ ...prev, optionalContracted: text }))
                 }
+                multiline
               />
             </View>
           </Card>

@@ -15,8 +15,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { Asset } from 'expo-asset';
-import * as FileSystem from 'expo-file-system';
 import { eventService } from '../../services/eventService';
 import { dolarService } from '../../services/dolarService';
 import Screen from '../../components/ui/Screen';
@@ -78,7 +76,6 @@ export default function EventDetailScreen({ route, navigation }: any) {
     ids: string[];
     date: string;
   } | null>(null);
-  const [logoBase64, setLogoBase64] = useState<string | null>(null);
   const reminderKey = `event-adjustment-reminders:${eventId}`;
 
   useEffect(() => {
@@ -95,25 +92,6 @@ export default function EventDetailScreen({ route, navigation }: any) {
     loadReminder();
   }, [reminderKey]);
 
-  useEffect(() => {
-    const loadLogo = async () => {
-      try {
-        const asset = Asset.fromModule(require('../../assets/images/logo.png'));
-        await asset.downloadAsync();
-        const uri = asset.localUri || asset.uri;
-        if (!uri) {
-          return;
-        }
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        setLogoBase64(base64);
-      } catch {
-        setLogoBase64(null);
-      }
-    };
-    loadLogo();
-  }, []);
 
   if (isLoading) {
     return (
@@ -409,17 +387,12 @@ export default function EventDetailScreen({ route, navigation }: any) {
             </table>
           `;
 
-      const logoHtml = logoBase64
-        ? `<img src="data:image/png;base64,${logoBase64}" style="height:60px; margin-bottom:12px;" />`
-        : '';
-
       const html = `
         <html>
           <head>
             <meta charset="utf-8" />
           </head>
           <body style="font-family: Arial, sans-serif; color:#0f172a; padding:24px;">
-            ${logoHtml}
             <h2 style="margin:0 0 6px 0;">Comprobante del evento</h2>
             <p style="margin:0 0 16px 0; color:#475569;">${event.name}</p>
 
@@ -775,14 +748,6 @@ export default function EventDetailScreen({ route, navigation }: any) {
           )}
         </View>
 
-        <View className="mt-8 px-6">
-          <Button
-            label="Generar comprobante PDF"
-            variant="secondary"
-            onPress={handleExportPdf}
-          />
-        </View>
-
         <View className="mt-6 px-6">
           <View className="flex-row gap-3">
             <View className="flex-1">
@@ -825,6 +790,15 @@ export default function EventDetailScreen({ route, navigation }: any) {
               />
             </View>
           </View>
+        </View>
+
+        <View className="mt-6 px-6">
+          <Button
+            label="PDF"
+            variant="secondary"
+            iconName="download"
+            onPress={handleExportPdf}
+          />
         </View>
       </ScrollView>
 
