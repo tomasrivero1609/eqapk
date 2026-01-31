@@ -79,6 +79,7 @@ model Event {
   roses String?
   cotillon String?
   photographer String?
+  optionalContracted String?
   currency    Currency   @default(ARS)
   totalAmount Float
   capacity    Int?

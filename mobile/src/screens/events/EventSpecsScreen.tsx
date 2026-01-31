@@ -35,6 +35,7 @@ export default function EventSpecsScreen({ route }: any) {
     roses: "",
     cotillon: "",
     photographer: "",
+    optionalContracted: "",
   });
 
   useEffect(() => {
@@ -65,6 +66,7 @@ export default function EventSpecsScreen({ route }: any) {
       roses: event.roses || "",
       cotillon: event.cotillon || "",
       photographer: event.photographer || "",
+      optionalContracted: event.optionalContracted || "",
     });
   }, [event]);
 
@@ -288,6 +290,14 @@ export default function EventSpecsScreen({ route }: any) {
                 value={formData.photographer}
                 onChangeText={(text) =>
                   setFormData((prev) => ({ ...prev, photographer: text }))
+                }
+              />
+              <Input
+                label="Opcional contratado"
+                placeholder="Detalle"
+                value={formData.optionalContracted}
+                onChangeText={(text) =>
+                  setFormData((prev) => ({ ...prev, optionalContracted: text }))
                 }
               />
             </View>

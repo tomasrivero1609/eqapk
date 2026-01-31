@@ -13,6 +13,10 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { Asset } from 'expo-asset';
+import * as FileSystem from 'expo-file-system';
 import { eventService } from '../../services/eventService';
 import { dolarService } from '../../services/dolarService';
 import Screen from '../../components/ui/Screen';
@@ -74,6 +78,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
     ids: string[];
     date: string;
   } | null>(null);
+  const [logoBase64, setLogoBase64] = useState<string | null>(null);
   const reminderKey = `event-adjustment-reminders:${eventId}`;
 
   useEffect(() => {
@@ -89,6 +94,26 @@ export default function EventDetailScreen({ route, navigation }: any) {
     };
     loadReminder();
   }, [reminderKey]);
+
+  useEffect(() => {
+    const loadLogo = async () => {
+      try {
+        const asset = Asset.fromModule(require('../../assets/images/logo.png'));
+        await asset.downloadAsync();
+        const uri = asset.localUri || asset.uri;
+        if (!uri) {
+          return;
+        }
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        setLogoBase64(base64);
+      } catch {
+        setLogoBase64(null);
+      }
+    };
+    loadLogo();
+  }, []);
 
   if (isLoading) {
     return (
@@ -310,6 +335,133 @@ export default function EventDetailScreen({ route, navigation }: any) {
       );
     } finally {
       setIsAdjusting(false);
+    }
+  };
+
+  const buildSpecsRow = (label: string, value?: string | number | null) =>
+    `<tr><td style="padding:6px 0; color:#475569;">${label}</td><td style="padding:6px 0; color:#0f172a;">${
+      value === undefined || value === null || value === '' ? 'Sin dato' : value
+    }</td></tr>`;
+
+  const handleExportPdf = async () => {
+    try {
+      const specsHtml = `
+        <table style="width:100%; border-collapse:collapse; margin-top:8px;">
+          ${buildSpecsRow('Descripcion de menu', event.menuDescription)}
+          ${buildSpecsRow('Horas del evento', event.eventHours)}
+          ${buildSpecsRow('Tipo de recepcion', event.receptionType)}
+          ${buildSpecsRow('Cantidad de platos (Adulto)', event.courseCountAdult)}
+          ${buildSpecsRow('Cantidad de platos (Juvenil)', event.courseCountJuvenile)}
+          ${buildSpecsRow('Cantidad de platos (Infantil)', event.courseCountChild)}
+          ${buildSpecsRow('Tipo de isla', event.islandType)}
+          ${buildSpecsRow('Postre', event.dessert)}
+          ${buildSpecsRow('Mesa dulce', event.sweetTable)}
+          ${buildSpecsRow('Fin de fiesta', event.partyEnd)}
+          ${buildSpecsRow('Platos especial', event.specialDishes)}
+          ${buildSpecsRow('Torta', event.cake)}
+          ${buildSpecsRow('Descripcion armado de salon', event.hallSetupDescription)}
+          ${buildSpecsRow('Manteleria', event.tablecloth)}
+          ${buildSpecsRow('Numeradores de mesa', event.tableNumbers)}
+          ${buildSpecsRow('Centros de mesa', event.centerpieces)}
+          ${buildSpecsRow('Souvenirs', event.souvenirs)}
+          ${buildSpecsRow('Ramo', event.bouquet)}
+          ${buildSpecsRow('Velas', event.candles)}
+          ${buildSpecsRow('Dijes', event.charms)}
+          ${buildSpecsRow('Rosas', event.roses)}
+          ${buildSpecsRow('Cotillon', event.cotillon)}
+          ${buildSpecsRow('Fotografo', event.photographer)}
+        </table>
+      `;
+
+      const paymentsHtml =
+        payments.length === 0
+          ? '<p style="color:#64748b;">No hay pagos registrados.</p>'
+          : `
+            <table style="width:100%; border-collapse:collapse; margin-top:8px;">
+              <thead>
+                <tr>
+                  <th style="text-align:left; padding:6px 0; color:#64748b; font-size:12px;">Fecha</th>
+                  <th style="text-align:left; padding:6px 0; color:#64748b; font-size:12px;">Monto</th>
+                  <th style="text-align:left; padding:6px 0; color:#64748b; font-size:12px;">Metodo</th>
+                  <th style="text-align:left; padding:6px 0; color:#64748b; font-size:12px;">Platos</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${payments
+                  .map((payment: Payment) => {
+                    const plates =
+                      payment.adultCovered || payment.juvenileCovered || payment.childCovered
+                        ? `${payment.adultCovered || 0} A / ${payment.juvenileCovered || 0} J / ${payment.childCovered || 0} I`
+                        : payment.platesCovered
+                          ? `${payment.platesCovered}`
+                          : '-';
+                    return `
+                      <tr>
+                        <td style="padding:6px 0;">${new Date(payment.paidAt).toLocaleDateString('es-AR')}</td>
+                        <td style="padding:6px 0;">${formatCurrency(payment.amount, payment.currency)}</td>
+                        <td style="padding:6px 0;">${payment.method || '-'}</td>
+                        <td style="padding:6px 0;">${plates}</td>
+                      </tr>
+                    `;
+                  })
+                  .join('')}
+              </tbody>
+            </table>
+          `;
+
+      const logoHtml = logoBase64
+        ? `<img src="data:image/png;base64,${logoBase64}" style="height:60px; margin-bottom:12px;" />`
+        : '';
+
+      const html = `
+        <html>
+          <head>
+            <meta charset="utf-8" />
+          </head>
+          <body style="font-family: Arial, sans-serif; color:#0f172a; padding:24px;">
+            ${logoHtml}
+            <h2 style="margin:0 0 6px 0;">Comprobante del evento</h2>
+            <p style="margin:0 0 16px 0; color:#475569;">${event.name}</p>
+
+            <h3 style="margin:16px 0 6px 0;">Datos del evento</h3>
+            <table style="width:100%; border-collapse:collapse;">
+              ${buildSpecsRow('Cliente', event.client?.name || '-')}
+              ${buildSpecsRow('Familiares', event.familyMembers || '-')}
+              ${buildSpecsRow('Fecha', formatLocalDate(event.date))}
+              ${buildSpecsRow('Horario', `${event.startTime}${event.endTime ? ` - ${event.endTime}` : ''}`)}
+              ${buildSpecsRow('Platos contratados', event.dishCount)}
+              ${buildSpecsRow('Adultos', event.adultCount || 0)}
+              ${buildSpecsRow('Juveniles', event.juvenileCount || 0)}
+              ${buildSpecsRow('Infantiles', event.childCount || 0)}
+              ${buildSpecsRow('Precio adulto', formatCurrency(event.adultPrice || 0, event.currency))}
+              ${buildSpecsRow('Precio juvenil', formatCurrency(event.juvenilePrice || 0, event.currency))}
+              ${buildSpecsRow('Precio infantil', formatCurrency(event.childPrice || 0, event.currency))}
+              ${buildSpecsRow('Total', formatCurrency(totalDue, event.currency))}
+              ${buildSpecsRow('Pagado', formatCurrency(totalPaid, event.currency))}
+              ${buildSpecsRow('Saldo', formatCurrency(balance, event.currency))}
+              ${buildSpecsRow('Ajuste trimestral', event.quarterlyAdjustmentPercent ? `${event.quarterlyAdjustmentPercent}%` : 'Sin ajuste')}
+            </table>
+
+            <h3 style="margin:20px 0 6px 0;">Pagos</h3>
+            ${paymentsHtml}
+
+            <h3 style="margin:20px 0 6px 0;">Especificaciones tecnicas</h3>
+            ${specsHtml}
+
+            ${event.description || event.notes ? '<h3 style="margin:20px 0 6px 0;">Notas</h3>' : ''}
+            ${event.description ? `<p style="margin:4px 0;"><strong>Descripcion:</strong> ${event.description}</p>` : ''}
+            ${event.notes ? `<p style="margin:4px 0;"><strong>Notas:</strong> ${event.notes}</p>` : ''}
+          </body>
+        </html>
+      `;
+
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri, {
+        UTI: 'com.adobe.pdf',
+        mimeType: 'application/pdf',
+      });
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'No se pudo generar el PDF.');
     }
   };
 
@@ -621,6 +773,14 @@ export default function EventDetailScreen({ route, navigation }: any) {
               )}
             </>
           )}
+        </View>
+
+        <View className="mt-8 px-6">
+          <Button
+            label="Generar comprobante PDF"
+            variant="secondary"
+            onPress={handleExportPdf}
+          />
         </View>
 
         <View className="mt-6 px-6">

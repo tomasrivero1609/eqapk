@@ -66,6 +66,7 @@ export interface Event {
   roses?: string;
   cotillon?: string;
   photographer?: string;
+  optionalContracted?: string;
   currency: Currency;
   totalAmount: number;
   capacity?: number;
@@ -140,6 +141,7 @@ export interface CreateEventDto {
   roses?: string;
   cotillon?: string;
   photographer?: string;
+  optionalContracted?: string;
   currency?: Currency;
   capacity?: number;
   status?: EventStatus;
