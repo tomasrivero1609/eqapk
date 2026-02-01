@@ -1,4 +1,4 @@
-import api from './api';
+import { api } from './api';
 
 export type DemonstrationItem = {
   id: string;
@@ -15,6 +15,10 @@ export const demonstrationService = {
   },
   async create(payload: { title: string; category: string; imageUrl: string }) {
     const response = await api.post('/demonstrations', payload);
+    return response.data;
+  },
+  async remove(id: string) {
+    const response = await api.delete(`/demonstrations/${id}`);
     return response.data;
   },
 };

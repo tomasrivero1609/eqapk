@@ -23,4 +23,10 @@ export class DemonstrationsService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async remove(id: string) {
+    return this.prisma.demonstrationItem.delete({
+      where: { id },
+    });
+  }
 }

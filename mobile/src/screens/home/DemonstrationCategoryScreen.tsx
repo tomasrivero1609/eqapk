@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import * as FileSystem from 'expo-file-system/legacy';
 import Screen from '../../components/ui/Screen';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -18,7 +19,7 @@ import Input from '../../components/ui/Input';
 import { useAuthStore } from '../../store/authStore';
 import { UserRole } from '../../types';
 import { demonstrationService } from '../../services/demonstrationService';
-import { supabase } from '../../services/supabaseClient';
+import { supabaseAnonKey, supabaseUrl } from '../../services/supabaseClient';
 
 const BUCKET_NAME = 'demostraciones';
 
@@ -28,14 +29,19 @@ const getFileExtension = (uri: string) => {
 };
 
 export default function DemonstrationCategoryScreen({ navigation, route }: any) {
-  const { category } = route.params as { category: string };
+  const { category, mode = 'view' } = route.params as {
+    category: string;
+    mode?: 'view' | 'manage';
+  };
   const { width } = useWindowDimensions();
   const isCompact = width < 400;
   const [title, setTitle] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const role = useAuthStore((state) => state.user?.role || UserRole.ADMIN);
-  const canUpload = role === UserRole.ADMIN || role === UserRole.SUPERADMIN;
+  const canManage = role === UserRole.ADMIN || role === UserRole.SUPERADMIN;
+  const canUpload = canManage && mode === 'manage';
 
   const { data: items, isLoading } = useQuery({
     queryKey: ['demonstrations', category],
@@ -44,18 +50,29 @@ export default function DemonstrationCategoryScreen({ navigation, route }: any) 
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permiso requerido', 'Se necesita acceso a tus fotos.');
+    if (!permission.granted && permission.accessPrivileges !== 'limited') {
+      Alert.alert('Permiso requerido', 'Habilita el acceso a fotos para continuar.');
+      return;
+    }
+    let result: ImagePicker.ImagePickerResult;
+    try {
+      const mediaTypes =
+        (ImagePicker as any).MediaType?.Images || ImagePicker.MediaTypeOptions.Images;
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes,
+        allowsEditing: true,
+        quality: 0.85,
+      });
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'No se pudo abrir la galeria.');
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.85,
-    });
-
     if (result.canceled) {
+      return;
+    }
+    if (!result.assets || result.assets.length === 0) {
+      Alert.alert('Error', 'No se pudo leer la imagen seleccionada.');
       return;
     }
 
@@ -70,22 +87,23 @@ export default function DemonstrationCategoryScreen({ navigation, route }: any) 
       const ext = getFileExtension(asset.uri);
       const fileName = `${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
 
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/${BUCKET_NAME}/${fileName}`;
+      const uploadResult = await FileSystem.uploadAsync(uploadUrl, asset.uri, {
+        httpMethod: 'POST',
+        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+        headers: {
+          Authorization: `Bearer ${supabaseAnonKey}`,
+          apikey: supabaseAnonKey,
+          'Content-Type': asset.mimeType || `image/${ext}`,
+          'x-upsert': 'false',
+        },
+      });
 
-      const { error } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(fileName, blob, {
-          contentType: asset.mimeType || `image/${ext}`,
-          upsert: false,
-        });
-
-      if (error) {
-        throw error;
+      if (uploadResult.status < 200 || uploadResult.status >= 300) {
+        throw new Error(`Upload failed (${uploadResult.status})`);
       }
 
-      const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(fileName);
-      const imageUrl = data.publicUrl;
+      const imageUrl = `${supabaseUrl}/storage/v1/object/public/${BUCKET_NAME}/${fileName}`;
 
       await demonstrationService.create({
         title: title.trim(),
@@ -104,6 +122,47 @@ export default function DemonstrationCategoryScreen({ navigation, route }: any) 
   };
 
   const grouped = useMemo(() => items || [], [items]);
+  const deleteFromStorage = async (imageUrl: string) => {
+    const marker = `/storage/v1/object/public/${BUCKET_NAME}/`;
+    const index = imageUrl.indexOf(marker);
+    if (index === -1) {
+      return;
+    }
+    const filePath = imageUrl.slice(index + marker.length);
+    const deleteUrl = `${supabaseUrl}/storage/v1/object/${BUCKET_NAME}/${filePath}`;
+    const response = await fetch(deleteUrl, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${supabaseAnonKey}`,
+        apikey: supabaseAnonKey,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('No se pudo borrar la imagen.');
+    }
+  };
+
+  const handleDelete = (item: { id: string; imageUrl: string }) => {
+    Alert.alert('Eliminar imagen', '¿Seguro que deseas eliminar esta imagen?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            setDeletingId(item.id);
+            await deleteFromStorage(item.imageUrl);
+            await demonstrationService.remove(item.id);
+            queryClient.invalidateQueries({ queryKey: ['demonstrations', category] });
+          } catch (err: any) {
+            Alert.alert('Error', err?.message || 'No se pudo eliminar la imagen.');
+          } finally {
+            setDeletingId(null);
+          }
+        },
+      },
+    ]);
+  };
 
   return (
     <Screen>
@@ -120,7 +179,9 @@ export default function DemonstrationCategoryScreen({ navigation, route }: any) 
               </TouchableOpacity>
             </View>
             <Text className="mt-2 text-sm text-slate-400">
-              Fotos cargadas para esta categoria.
+              {mode === 'manage'
+                ? 'Carga y administra las fotos de esta categoria.'
+                : 'Fotos cargadas para esta categoria.'}
             </Text>
           </View>
 
@@ -153,16 +214,27 @@ export default function DemonstrationCategoryScreen({ navigation, route }: any) 
             ) : (
               grouped.map((item) => (
                 <Card key={item.id} className="p-0 overflow-hidden">
+                  <View className="flex-row items-center justify-between border-b border-slate-700/50 px-4 py-3">
+                    <Text className="text-base font-semibold text-slate-100">
+                      {item.title}
+                    </Text>
+                    {canUpload && (
+                      <TouchableOpacity
+                        onPress={() => handleDelete({ id: item.id, imageUrl: item.imageUrl })}
+                        disabled={deletingId === item.id}
+                        className="rounded-full bg-rose-500/15 px-3 py-1"
+                      >
+                        <Text className="text-xs font-semibold text-rose-300">
+                          {deletingId === item.id ? 'Eliminando...' : 'Eliminar'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                   <Image
                     source={{ uri: item.imageUrl }}
                     style={{ width: '100%', height: 220 }}
                     resizeMode="cover"
                   />
-                  <View className="px-4 py-3">
-                    <Text className="text-base font-semibold text-slate-100">
-                      {item.title}
-                    </Text>
-                  </View>
                 </Card>
               ))
             )}

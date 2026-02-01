@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Delete, Param } from '@nestjs/common';
 import { DemonstrationsService } from './demonstrations.service';
 import { CreateDemonstrationDto } from './dto/create-demonstration.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -22,5 +22,12 @@ export class DemonstrationsController {
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   create(@GetUser() user: any, @Body() dto: CreateDemonstrationDto) {
     return this.demonstrationsService.create(user.id, dto);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  remove(@Param('id') id: string) {
+    return this.demonstrationsService.remove(id);
   }
 }
