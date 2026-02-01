@@ -9,6 +9,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ImageViewer from '../../components/ui/ImageViewer';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -33,11 +34,13 @@ export default function DemonstrationCategoryScreen({ navigation, route }: any) 
     category: string;
     mode?: 'view' | 'manage';
   };
-  const { width } = useWindowDimensions();
-  const isCompact = width < 400;
+  const { width: screenWidth } = useWindowDimensions();
+  const isCompact = screenWidth < 400;
   const [title, setTitle] = useState('');
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
   const queryClient = useQueryClient();
   const role = useAuthStore((state) => state.user?.role || UserRole.ADMIN);
   const canManage = role === UserRole.ADMIN || role === UserRole.SUPERADMIN;
@@ -122,14 +125,22 @@ export default function DemonstrationCategoryScreen({ navigation, route }: any) 
   };
 
   const grouped = useMemo(() => items || [], [items]);
+  const viewerImages = useMemo(
+    () => grouped.map((item) => ({ uri: item.imageUrl, title: item.title })),
+    [grouped]
+  );
   const deleteFromStorage = async (imageUrl: string) => {
     const marker = `/storage/v1/object/public/${BUCKET_NAME}/`;
     const index = imageUrl.indexOf(marker);
     if (index === -1) {
-      return;
+      return { ok: false, status: 0 };
     }
     const filePath = imageUrl.slice(index + marker.length);
-    const deleteUrl = `${supabaseUrl}/storage/v1/object/${BUCKET_NAME}/${filePath}`;
+    const encodedPath = filePath
+      .split('/')
+      .map((segment) => encodeURIComponent(segment))
+      .join('/');
+    const deleteUrl = `${supabaseUrl}/storage/v1/object/${BUCKET_NAME}/${encodedPath}`;
     const response = await fetch(deleteUrl, {
       method: 'DELETE',
       headers: {
@@ -137,9 +148,13 @@ export default function DemonstrationCategoryScreen({ navigation, route }: any) 
         apikey: supabaseAnonKey,
       },
     });
-    if (!response.ok) {
-      throw new Error('No se pudo borrar la imagen.');
+    if (response.status === 404) {
+      return { ok: true, status: 404 };
     }
+    if (!response.ok) {
+      return { ok: false, status: response.status };
+    }
+    return { ok: true, status: response.status };
   };
 
   const handleDelete = (item: { id: string; imageUrl: string }) => {
@@ -151,9 +166,15 @@ export default function DemonstrationCategoryScreen({ navigation, route }: any) 
         onPress: async () => {
           try {
             setDeletingId(item.id);
-            await deleteFromStorage(item.imageUrl);
+            const storageResult = await deleteFromStorage(item.imageUrl);
             await demonstrationService.remove(item.id);
             queryClient.invalidateQueries({ queryKey: ['demonstrations', category] });
+            if (!storageResult.ok) {
+              Alert.alert(
+                'Aviso',
+                'Se borro el registro, pero no se pudo borrar la imagen en Supabase.'
+              );
+            }
           } catch (err: any) {
             Alert.alert('Error', err?.message || 'No se pudo eliminar la imagen.');
           } finally {
@@ -212,7 +233,7 @@ export default function DemonstrationCategoryScreen({ navigation, route }: any) 
             ) : grouped.length === 0 ? (
               <Text className="text-sm text-slate-400">Sin imagenes cargadas.</Text>
             ) : (
-              grouped.map((item) => (
+              grouped.map((item, index) => (
                 <Card key={item.id} className="p-0 overflow-hidden">
                   <View className="flex-row items-center justify-between border-b border-slate-700/50 px-4 py-3">
                     <Text className="text-base font-semibold text-slate-100">
@@ -230,17 +251,31 @@ export default function DemonstrationCategoryScreen({ navigation, route }: any) 
                       </TouchableOpacity>
                     )}
                   </View>
-                  <Image
-                    source={{ uri: item.imageUrl }}
-                    style={{ width: '100%', height: 220 }}
-                    resizeMode="cover"
-                  />
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={() => {
+                      setViewerIndex(index);
+                      setViewerVisible(true);
+                    }}
+                  >
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={{ width: '100%', height: 220 }}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
                 </Card>
               ))
             )}
           </View>
         </ScrollView>
       </SafeAreaView>
+      <ImageViewer
+        visible={viewerVisible}
+        images={viewerImages}
+        initialIndex={viewerIndex}
+        onClose={() => setViewerVisible(false)}
+      />
     </Screen>
   );
 }
