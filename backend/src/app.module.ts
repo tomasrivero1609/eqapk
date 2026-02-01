@@ -12,6 +12,7 @@ import { OrdersModule } from './orders/orders.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MailModule } from './mail/mail.module';
+import { DemonstrationsModule } from './demonstrations/demonstrations.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { MailModule } from './mail/mail.module';
     CalendarModule,
     PaymentsModule,
     MailModule,
+    DemonstrationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

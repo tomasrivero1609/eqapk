@@ -16,6 +16,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   events Event[]
+  demonstrations DemonstrationItem[]
 }
 
 enum UserRole {
@@ -165,6 +166,18 @@ model EventMenu {
   menu    Menu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, menuId])
+}
+
+model DemonstrationItem {
+  id        String   @id @default(uuid())
+  title     String
+  category  String
+  imageUrl  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model Order {
