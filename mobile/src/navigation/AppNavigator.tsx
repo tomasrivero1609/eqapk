@@ -7,7 +7,6 @@ import MainNavigator from './MainNavigator';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import RoleLandingScreen from '../screens/home/RoleLandingScreen';
 import DemonstrationsScreen from '../screens/home/DemonstrationsScreen';
-import DemonstrationCategoryScreen from '../screens/home/DemonstrationCategoryScreen';
 
 const Stack = createNativeStackNavigator();
 const AppDarkTheme = {
@@ -39,7 +38,6 @@ export default function AppNavigator() {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="RoleLanding" component={RoleLandingScreen} />
           <Stack.Screen name="Demonstrations" component={DemonstrationsScreen} />
-          <Stack.Screen name="DemonstrationCategory" component={DemonstrationCategoryScreen} />
           <Stack.Screen name="MainTabs" component={MainNavigator} />
         </Stack.Navigator>
       ) : (

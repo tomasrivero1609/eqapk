@@ -16,13 +16,7 @@
     "userInterfaceStyle": "dark",
     "plugins": [
       "@react-native-community/datetimepicker",
-      "expo-secure-store",
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Permite que la app acceda a tus fotos para subir imagenes de demostracion."
-        }
-      ]
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {
