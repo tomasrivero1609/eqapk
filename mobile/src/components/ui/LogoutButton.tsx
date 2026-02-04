@@ -1,5 +1,8 @@
 import React from 'react';
-import { TouchableOpacity, Text, useWindowDimensions } from 'react-native';
+import { TouchableOpacity, Text, useWindowDimensions, View, StyleSheet } from 'react-native';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 
 export default function LogoutButton() {
@@ -10,9 +13,47 @@ export default function LogoutButton() {
   return (
     <TouchableOpacity
       onPress={logout}
-      className={`mr-2 rounded-full bg-slate-800 ${isCompact ? 'px-2 py-1' : 'px-3 py-1'}`}
+      activeOpacity={0.8}
+      style={[
+        styles.container,
+        isCompact && styles.containerCompact
+      ]}
     >
-      <Text className="text-xs font-semibold text-slate-200">Salir</Text>
+      <View style={styles.content}>
+        <Ionicons name="log-out-outline" size={14} color="#f87171" />
+        <Text style={[styles.label, isCompact && styles.labelCompact]}>
+          Salir
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginRight: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(30, 41, 59, 0.8)',
+    borderWidth: 1,
+    borderColor: 'rgba(248, 113, 113, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  containerCompact: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#f87171',
+  },
+  labelCompact: {
+    fontSize: 12,
+  },
+});

@@ -2,6 +2,8 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useWindowDimensions } from 'react-native';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 import EventsListScreen from '../screens/events/EventsListScreen';
 import EventDetailScreen from '../screens/events/EventDetailScreen';
@@ -26,18 +28,27 @@ const Stack = createNativeStackNavigator();
 
 const getStackScreenOptions = (isCompact: boolean) => ({
   headerShown: true,
-  headerShadowVisible: false,
-  headerStyle: { backgroundColor: '#0B1120' },
-  headerTitleStyle: {
-    fontWeight: '600',
-    color: '#E2E8F0',
-    fontSize: isCompact ? 16 : 18,
+  headerShadowVisible: true,
+  headerStyle: { 
+    backgroundColor: '#0f172a',
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e293b',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  headerTitleAlign: isCompact ? 'left' : 'center',
-  headerTitleContainerStyle: isCompact ? { paddingRight: 64 } : undefined,
+  headerTitleStyle: {
+    fontWeight: 'bold',
+    color: '#f1f5f9',
+    fontSize: isCompact ? 18 : 20,
+  },
+  headerTitleAlign: (isCompact ? 'left' : 'center') as 'left' | 'center',
+  headerTitleContainerStyle: isCompact ? { paddingRight: 80 } : { paddingHorizontal: 80 },
   headerTintColor: '#E2E8F0',
-  headerLeftContainerStyle: { paddingLeft: 12 },
-  headerRightContainerStyle: { paddingRight: 12 },
+  headerLeftContainerStyle: { paddingLeft: 16, minWidth: 100 },
+  headerRightContainerStyle: { paddingRight: 16, minWidth: 100 },
   headerRight: () => <LogoutButton />,
   headerLeft: () => (isCompact ? null : <RolePill />),
 });
