@@ -83,4 +83,24 @@ export const demoImages: DemoImage[] = [
     source: require("../../../assets/6   postres/foto 6   panna cotta.jpg"),
     label: "Panna cotta",
   },
+  {
+    source: require("../../../assets/6   postres/foto 7 torta.jpeg"),
+    label: "Torta",
+  },
+  {
+    source: require("../../../assets/6   postres/foto 8 torta.jpeg"),
+    label: "Torta",
+  },
+  {
+    source: require("../../../assets/6   postres/foto 9 torta.jpeg"),
+    label: "Torta",
+  },
+  {
+    source: require("../../../assets/6   postres/foto 10 torta.jpeg"),
+    label: "Torta",
+  },
+  {
+    source: require("../../../assets/6   postres/foto 11 torta.jpeg"),
+    label: "Torta",
+  },
 ];
