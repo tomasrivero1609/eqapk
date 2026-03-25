@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
@@ -51,7 +52,7 @@ export class UsersService {
         email: dto.email,
         password: hashedPassword,
         name: dto.name,
-        role: dto.role || 'ADMIN',
+        role: dto.role || 'STAFF',
         permissions: dto.permissions || {},
       },
       select: USER_SELECT,
@@ -85,7 +86,10 @@ export class UsersService {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const user = await this.findOne(id);
+    if (user.role === 'SUPERADMIN') {
+      throw new ForbiddenException('No se puede eliminar un usuario SUPERADMIN');
+    }
     await this.prisma.user.delete({ where: { id } });
     return { deleted: true };
   }

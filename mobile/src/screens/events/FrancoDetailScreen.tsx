@@ -17,6 +17,7 @@ import Screen from '../../components/ui/Screen';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { formatLocalDate } from '../../utils/date';
+import { useAuthStore } from '../../store/authStore';
 
 const statusVariant = (status: EventStatus) => {
   switch (status) {
@@ -39,6 +40,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function FrancoDetailScreen({ route, navigation }: any) {
+  const canDelete = useAuthStore((s) => s.hasPermission('francos', 'eliminar'));
   const { eventId } = route.params;
   const queryClient = useQueryClient();
 
@@ -121,15 +123,17 @@ export default function FrancoDetailScreen({ route, navigation }: any) {
           />
         </View>
 
-        <View style={styles.actionsSection}>
-          <Button
-            label="Eliminar franco"
-            variant="danger"
-            iconName="trash-outline"
-            onPress={handleDelete}
-            loading={deleteMutation.isPending}
-          />
-        </View>
+        {canDelete && (
+          <View style={styles.actionsSection}>
+            <Button
+              label="Eliminar franco"
+              variant="danger"
+              iconName="trash-outline"
+              onPress={handleDelete}
+              loading={deleteMutation.isPending}
+            />
+          </View>
+        )}
       </ScrollView>
     </Screen>
   );

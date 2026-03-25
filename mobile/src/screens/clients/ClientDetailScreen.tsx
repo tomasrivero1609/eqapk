@@ -7,8 +7,10 @@ import EmptyState from '../../components/ui/EmptyState';
 import Button from '../../components/ui/Button';
 import { clientService } from '../../services/clientService';
 import { Client } from '../../types';
+import { useAuthStore } from '../../store/authStore';
 
 export default function ClientDetailScreen({ route, navigation }: any) {
+  const canEdit = useAuthStore((s) => s.hasPermission('clientes', 'editar'));
   const { clientId } = route.params as { clientId: string };
 
   const { data: client, isLoading } = useQuery({
@@ -108,12 +110,14 @@ export default function ClientDetailScreen({ route, navigation }: any) {
           )}
         </View>
 
-        <View className="mt-6 px-6">
-          <Button
-            label="Editar datos"
-            onPress={() => navigation.navigate('CreateClient', { clientId })}
-          />
-        </View>
+        {canEdit && (
+          <View className="mt-6 px-6">
+            <Button
+              label="Editar datos"
+              onPress={() => navigation.navigate('CreateClient', { clientId })}
+            />
+          </View>
+        )}
       </ScrollView>
     </Screen>
   );

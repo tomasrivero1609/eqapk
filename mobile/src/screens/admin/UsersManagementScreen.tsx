@@ -65,7 +65,7 @@ export default function UsersManagementScreen({ navigation }: any) {
     return (
       <View style={[styles.roleBadge, isSuperAdmin && styles.roleBadgeSuper]}>
         <Text style={[styles.roleBadgeText, isSuperAdmin && styles.roleBadgeTextSuper]}>
-          {isSuperAdmin ? 'Super Admin' : 'Admin'}
+          {isSuperAdmin ? 'Super Admin' : 'Staff'}
         </Text>
       </View>
     );
@@ -114,7 +114,7 @@ export default function UsersManagementScreen({ navigation }: any) {
             </View>
           </View>
           <View style={styles.actions}>
-            {canDelete && !isCurrentUser && (
+            {canDelete && !isCurrentUser && item.role !== 'SUPERADMIN' && (
               <TouchableOpacity
                 onPress={() => handleDelete(item)}
                 style={styles.deleteBtn}

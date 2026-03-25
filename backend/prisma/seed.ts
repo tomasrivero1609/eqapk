@@ -31,7 +31,7 @@ async function main() {
     where: { email: 'admin@eqapk.com' },
     update: {
       name: 'Admin',
-      role: UserRole.ADMIN,
+      role: UserRole.STAFF,
       password: adminPassword,
       permissions: ALL_PERMISSIONS,
     },
@@ -39,7 +39,7 @@ async function main() {
       email: 'admin@eqapk.com',
       name: 'Admin',
       password: adminPassword,
-      role: UserRole.ADMIN,
+      role: UserRole.STAFF,
       permissions: ALL_PERMISSIONS,
     },
   });

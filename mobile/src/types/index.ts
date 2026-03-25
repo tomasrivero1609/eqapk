@@ -110,7 +110,7 @@ export enum Currency {
 }
 
 export enum UserRole {
-  ADMIN = 'ADMIN',
+  STAFF = 'STAFF',
   SUPERADMIN = 'SUPERADMIN',
 }
 

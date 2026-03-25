@@ -17,6 +17,7 @@ import Screen from '../../components/ui/Screen';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { formatLocalDate } from '../../utils/date';
+import { useAuthStore } from '../../store/authStore';
 
 const statusVariant = (status: EventStatus) => {
   switch (status) {
@@ -42,6 +43,8 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function EntrevistaDetailScreen({ route, navigation }: any) {
+  const canEdit = useAuthStore((s) => s.hasPermission('entrevistas', 'editar'));
+  const canDelete = useAuthStore((s) => s.hasPermission('entrevistas', 'eliminar'));
   const { eventId } = route.params;
   const queryClient = useQueryClient();
 
@@ -166,20 +169,24 @@ export default function EntrevistaDetailScreen({ route, navigation }: any) {
         </View>
 
         <View style={styles.actionsSection}>
-          <Button
-            label="Cambiar estado"
-            variant="secondary"
-            iconName="swap-horizontal-outline"
-            onPress={handleChangeStatus}
-          />
-          <View style={styles.actionSpacer} />
-          <Button
-            label="Eliminar entrevista"
-            variant="danger"
-            iconName="trash-outline"
-            onPress={handleDelete}
-            loading={deleteMutation.isPending}
-          />
+          {canEdit && (
+            <Button
+              label="Cambiar estado"
+              variant="secondary"
+              iconName="swap-horizontal-outline"
+              onPress={handleChangeStatus}
+            />
+          )}
+          {canEdit && canDelete && <View style={styles.actionSpacer} />}
+          {canDelete && (
+            <Button
+              label="Eliminar entrevista"
+              variant="danger"
+              iconName="trash-outline"
+              onPress={handleDelete}
+              loading={deleteMutation.isPending}
+            />
+          )}
         </View>
       </ScrollView>
     </Screen>

@@ -11,7 +11,7 @@ model User {
   email       String   @unique
   password    String
   name        String
-  role        UserRole @default(ADMIN)
+  role        UserRole @default(STAFF)
   permissions Json     @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -21,7 +21,7 @@ model User {
 }
 
 enum UserRole {
-  ADMIN
+  STAFF
   SUPERADMIN
 }
 

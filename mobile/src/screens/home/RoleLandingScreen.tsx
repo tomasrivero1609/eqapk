@@ -20,28 +20,35 @@ type LandingRoute = {
   permissionModule: PermissionModule;
 };
 
-const ALL_ROUTES: LandingRoute[] = [
+const GESTION_ROUTES: LandingRoute[] = [
   { key: 'Events', label: 'Eventos', icon: 'calendar', screen: 'EventsList', description: 'Crea y gestiona eventos del salón', permissionModule: 'eventos' },
   { key: 'Entrevistas', label: 'Entrevistas', icon: 'people', screen: 'EntrevistasList', description: 'Entrevistas programadas', permissionModule: 'entrevistas' },
   { key: 'Francos', label: 'Francos', icon: 'sunny', screen: 'FrancosList', description: 'Días libres y francos', permissionModule: 'francos' },
   { key: 'Clients', label: 'Clientes', icon: 'person-circle', screen: 'ClientsList', description: 'Administra tus clientes', permissionModule: 'clientes' },
-  { key: 'Admin', label: 'Ingresos', icon: 'stats-chart', screen: 'AdminSummary', description: 'Revisa ingresos totales', permissionModule: 'ingresos' },
   { key: 'Demonstrations', label: 'Demostraciones', icon: 'images', screen: 'Demonstrations', description: 'Galería de platos', permissionModule: 'demostraciones' },
+];
+
+const ADMIN_ROUTES: LandingRoute[] = [
+  { key: 'Admin', label: 'Ingresos', icon: 'stats-chart', screen: 'AdminSummary', description: 'Revisa ingresos totales', permissionModule: 'ingresos' },
   { key: 'Users', label: 'Usuarios', icon: 'people-circle', screen: 'UsersManagement', description: 'Gestiona usuarios y permisos', permissionModule: 'usuarios' },
 ];
 
 export default function RoleLandingScreen({ navigation }: any) {
   const { role, name } = useAuthStore((state) => ({
-    role: state.user?.role || UserRole.ADMIN,
+    role: state.user?.role || UserRole.STAFF,
     name: state.user?.name || 'Equipo',
   }));
   const logout = useAuthStore((state) => state.logout);
   const hasPermission = useAuthStore((state) => state.hasPermission);
-  const actions = useMemo(
-    () => ALL_ROUTES.filter((r) => hasPermission(r.permissionModule, 'ver')),
+  const gestionActions = useMemo(
+    () => GESTION_ROUTES.filter((r) => hasPermission(r.permissionModule, 'ver')),
     [hasPermission],
   );
-  const roleLabel = role === UserRole.SUPERADMIN ? 'Superadmin' : 'Admin';
+  const adminActions = useMemo(
+    () => ADMIN_ROUTES.filter((r) => hasPermission(r.permissionModule, 'ver')),
+    [hasPermission],
+  );
+  const roleLabel = role === UserRole.SUPERADMIN ? 'Super Admin' : 'Staff';
   const { width } = useWindowDimensions();
   const isCompact = width < 400;
   const insets = useSafeAreaInsets();
@@ -118,28 +125,64 @@ export default function RoleLandingScreen({ navigation }: any) {
             </View>
           </View>
 
-          {/* Action grid */}
-          <View style={styles.actionsSection}>
-            <Text style={styles.sectionTitle}>Accesos rápidos</Text>
-            <View style={[styles.actionsGrid, isCompact && styles.actionsGridCompact]}>
-              {actions.map((item) => (
+          {/* Gestión grid */}
+          {gestionActions.length > 0 && (
+            <View style={styles.actionsSection}>
+              <Text style={styles.sectionTitle}>Gestión</Text>
+              <View style={[styles.actionsGrid, isCompact && styles.actionsGridCompact]}>
+                {gestionActions.map((item, index) => {
+                  const isLast = index === gestionActions.length - 1;
+                  const isOddLast = isLast && gestionActions.length % 2 !== 0;
+                  return (
+                    <TouchableOpacity
+                      key={item.key}
+                      onPress={() => navigateTo(item)}
+                      style={[
+                        styles.actionCard,
+                        isCompact && styles.actionCardCompact,
+                        !isCompact && isOddLast && styles.actionCardFull,
+                      ]}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.actionIconContainer}>
+                        <Ionicons name={item.icon as any} size={22} color="#c4b5fd" />
+                      </View>
+                      <Text style={styles.actionLabel}>{item.label}</Text>
+                      <Text style={styles.actionDescription} numberOfLines={1}>
+                        {item.description}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* Administración list */}
+          {adminActions.length > 0 && (
+            <View style={styles.adminSection}>
+              <Text style={styles.sectionTitle}>Administración</Text>
+              {adminActions.map((item) => (
                 <TouchableOpacity
                   key={item.key}
                   onPress={() => navigateTo(item)}
-                  style={[styles.actionCard, isCompact && styles.actionCardCompact]}
+                  style={styles.adminRow}
                   activeOpacity={0.8}
                 >
-                  <View style={styles.actionIconContainer}>
-                    <Ionicons name={item.icon as any} size={22} color="#c4b5fd" />
+                  <View style={styles.adminIconContainer}>
+                    <Ionicons name={item.icon as any} size={18} color="#c4b5fd" />
                   </View>
-                  <Text style={styles.actionLabel}>{item.label}</Text>
-                  <Text style={styles.actionDescription} numberOfLines={1}>
-                    {item.description}
-                  </Text>
+                  <View style={styles.adminTextContainer}>
+                    <Text style={styles.adminLabel}>{item.label}</Text>
+                    <Text style={styles.adminDescription} numberOfLines={1}>
+                      {item.description}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color="#475569" />
                 </TouchableOpacity>
               ))}
             </View>
-          </View>
+          )}
 
           {/* Footer */}
           <View style={styles.footer}>
@@ -257,6 +300,9 @@ const styles = StyleSheet.create({
     gap: 14,
     padding: 16,
   },
+  actionCardFull: {
+    width: '100%',
+  },
   actionIconContainer: {
     width: 42,
     height: 42,
@@ -275,6 +321,42 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748b',
     marginTop: 4,
+  },
+  adminSection: {
+    paddingHorizontal: 20,
+    marginTop: 28,
+  },
+  adminRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0f172a',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    marginBottom: 8,
+  },
+  adminIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#1e293b',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  adminTextContainer: {
+    flex: 1,
+  },
+  adminLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#f1f5f9',
+  },
+  adminDescription: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 2,
   },
   footer: {
     paddingHorizontal: 20,

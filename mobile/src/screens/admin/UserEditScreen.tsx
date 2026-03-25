@@ -54,7 +54,7 @@ export default function UserEditScreen({ route, navigation }: any) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'ADMIN' | 'SUPERADMIN'>('ADMIN');
+  const [role, setRole] = useState<'STAFF' | 'SUPERADMIN'>('STAFF');
   const [permissions, setPermissions] = useState<UserPermissions>({});
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -69,7 +69,7 @@ export default function UserEditScreen({ route, navigation }: any) {
     if (existingUser) {
       setName(existingUser.name);
       setEmail(existingUser.email);
-      setRole(existingUser.role as 'ADMIN' | 'SUPERADMIN');
+      setRole(existingUser.role as 'STAFF' | 'SUPERADMIN');
       setPermissions((existingUser.permissions as UserPermissions) || {});
     }
   }, [existingUser]);
@@ -223,11 +223,11 @@ export default function UserEditScreen({ route, navigation }: any) {
             <Text style={styles.roleLabel}>Rol</Text>
             <View style={styles.roleToggle}>
               <TouchableOpacity
-                style={[styles.roleOption, role === 'ADMIN' && styles.roleOptionActive]}
-                onPress={() => setRole('ADMIN')}
+                style={[styles.roleOption, role === 'STAFF' && styles.roleOptionActive]}
+                onPress={() => setRole('STAFF')}
               >
-                <Text style={[styles.roleOptionText, role === 'ADMIN' && styles.roleOptionTextActive]}>
-                  Admin
+                <Text style={[styles.roleOptionText, role === 'STAFF' && styles.roleOptionTextActive]}>
+                  Staff
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity

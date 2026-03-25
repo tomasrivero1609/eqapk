@@ -22,6 +22,7 @@ import Card from '../../components/ui/Card';
 import EmptyState from '../../components/ui/EmptyState';
 import Button from '../../components/ui/Button';
 import { Payment } from '../../types';
+import { useAuthStore } from '../../store/authStore';
 import { formatCurrency } from '../../utils/format';
 import { convertAmount } from '../../utils/currency';
 import { formatLocalDate } from '../../utils/date';
@@ -52,6 +53,8 @@ const getLastPaymentDate = (payments?: Array<{ paidAt: string }>) => {
 };
 
 export default function EventDetailScreen({ route, navigation }: any) {
+  const canEdit = useAuthStore((s) => s.hasPermission('eventos', 'editar'));
+  const canDelete = useAuthStore((s) => s.hasPermission('eventos', 'eliminar'));
   const { eventId } = route.params;
   const [visiblePaymentsCount, setVisiblePaymentsCount] = useState(10);
 
@@ -752,45 +755,49 @@ export default function EventDetailScreen({ route, navigation }: any) {
 
         <View className="mt-6 px-6">
           <View className="flex-row gap-3">
-            <View className="flex-1">
-              <Button
-                label="Editar"
-                variant="primary"
-                iconName="pencil"
-                onPress={() => navigation.navigate('CreateEvent', { eventId: event.id })}
-              />
-            </View>
-            <View className="flex-1">
-              <Button
-                label="Eliminar"
-                variant="danger"
-                iconName="trash"
-                onPress={() => {
-                Alert.alert(
-                  'Eliminar evento',
-                  'Esta accion no se puede deshacer. Quieres eliminarlo?',
-                  [
-                    { text: 'Cancelar', style: 'cancel' },
-                  {
-                    text: 'Eliminar',
-                    style: 'destructive',
-                    onPress: async () => {
-                      try {
-                        await eventService.delete(event.id);
-                        navigation.goBack();
-                      } catch (error: any) {
-                        Alert.alert(
-                          'Error',
-                          error.response?.data?.message || 'No se pudo eliminar',
-                        );
-                      }
+            {canEdit && (
+              <View className="flex-1">
+                <Button
+                  label="Editar"
+                  variant="primary"
+                  iconName="pencil"
+                  onPress={() => navigation.navigate('CreateEvent', { eventId: event.id })}
+                />
+              </View>
+            )}
+            {canDelete && (
+              <View className="flex-1">
+                <Button
+                  label="Eliminar"
+                  variant="danger"
+                  iconName="trash"
+                  onPress={() => {
+                  Alert.alert(
+                    'Eliminar evento',
+                    'Esta accion no se puede deshacer. Quieres eliminarlo?',
+                    [
+                      { text: 'Cancelar', style: 'cancel' },
+                    {
+                      text: 'Eliminar',
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await eventService.delete(event.id);
+                          navigation.goBack();
+                        } catch (error: any) {
+                          Alert.alert(
+                            'Error',
+                            error.response?.data?.message || 'No se pudo eliminar',
+                          );
+                        }
+                      },
                     },
-                  },
-                ],
-              );
-                }}
-              />
-            </View>
+                  ],
+                );
+                  }}
+                />
+              </View>
+            )}
           </View>
         </View>
 
