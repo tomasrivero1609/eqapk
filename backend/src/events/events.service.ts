@@ -15,6 +15,54 @@ export class EventsService {
     private mailService: MailService,
   ) {}
 
+  private buildCalendarDescription(event: any): string | undefined {
+    const lines: string[] = [];
+
+    if (event.description) lines.push(event.description);
+    if (event.familyMembers) lines.push(`Familiares: ${event.familyMembers}`);
+
+    const specs: [string, unknown][] = [
+      ['Menu', event.menuDescription],
+      ['Horas del evento', event.eventHours],
+      ['Recepcion', event.receptionType],
+      ['Platos adulto', event.courseCountAdult],
+      ['Platos juvenil', event.courseCountJuvenile],
+      ['Platos infantil', event.courseCountChild],
+      ['Isla', event.islandType],
+      ['Postre', event.dessert],
+      ['Mesa dulce', event.sweetTable],
+      ['Fin de fiesta', event.partyEnd],
+      ['Platos especiales', event.specialDishes],
+      ['Torta', event.cake],
+      ['Armado de salon', event.hallSetupDescription],
+      ['Manteleria', event.tablecloth],
+      ['Numeradores', event.tableNumbers],
+      ['Centros de mesa', event.centerpieces],
+      ['Souvenirs', event.souvenirs],
+      ['Ramo', event.bouquet],
+      ['Velas', event.candles],
+      ['Dijes', event.charms],
+      ['Rosas', event.roses],
+      ['Cotillon', event.cotillon],
+      ['Fotografo', event.photographer],
+      ['Opcional contratado', event.optionalContracted],
+    ];
+
+    const filled = specs.filter(([, v]) => v != null && v !== '');
+    if (filled.length > 0) {
+      lines.push('', '--- Especificaciones ---');
+      for (const [label, value] of filled) {
+        lines.push(`${label}: ${value}`);
+      }
+    }
+
+    if (event.notes) {
+      lines.push('', `Notas: ${event.notes}`);
+    }
+
+    return lines.length > 0 ? lines.join('\n') : undefined;
+  }
+
   async create(userId: string, createEventDto: CreateEventDto) {
     const adultCount = createEventDto.adultCount ?? 0;
     const juvenileCount = createEventDto.juvenileCount ?? 0;
@@ -93,7 +141,7 @@ export class EventsService {
     try {
       const calendarEventId = await this.calendarService.createEvent({
         title: event.name,
-        description: event.description || undefined,
+        description: this.buildCalendarDescription(event),
         date: event.date,
         startTime: event.startTime,
         endTime: event.endTime || undefined,
@@ -267,7 +315,7 @@ export class EventsService {
       try {
         await this.calendarService.updateEvent(updatedEvent.calendarEventId, {
           title: updatedEvent.name,
-          description: updatedEvent.description || undefined,
+          description: this.buildCalendarDescription(updatedEvent),
           date: updatedEvent.date,
           startTime: updatedEvent.startTime,
           endTime: updatedEvent.endTime || undefined,

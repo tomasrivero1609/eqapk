@@ -164,7 +164,7 @@ export class CalendarService {
 
     const timezone =
       this.configService.get<string>('GOOGLE_CALENDAR_TIMEZONE') ||
-      'America/Mexico_City';
+      'America/Argentina/Buenos_Aires';
 
     const start = new Date(`${date}T00:00:00`);
     const end = new Date(`${date}T23:59:59`);
@@ -215,7 +215,7 @@ export class CalendarService {
   private buildEventPayload(input: CalendarEventInput) {
     const timezone =
       this.configService.get<string>('GOOGLE_CALENDAR_TIMEZONE') ||
-      'America/Mexico_City';
+      'America/Argentina/Buenos_Aires';
 
     const dateString = input.date.toISOString().slice(0, 10);
     const { startDateTime, endDateTime } = this.buildDateTimes(
