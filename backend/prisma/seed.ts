@@ -46,6 +46,38 @@ async function main() {
       role: UserRole.SUPERADMIN,
     },
   });
+
+  const tomasPassword = await bcrypt.hash('ten20102010', 10);
+  await prisma.user.upsert({
+    where: { email: 'tomasrivero1609@gmail.com' },
+    update: {
+      name: 'Tomás Rivero',
+      role: UserRole.SUPERADMIN,
+      password: tomasPassword,
+    },
+    create: {
+      email: 'tomasrivero1609@gmail.com',
+      name: 'Tomás Rivero',
+      password: tomasPassword,
+      role: UserRole.SUPERADMIN,
+    },
+  });
+
+  const belenPassword = await bcrypt.hash('belenapk123', 10);
+  await prisma.user.upsert({
+    where: { email: 'belenalvarez638@gmail.com' },
+    update: {
+      name: 'Belén Alvarez',
+      role: UserRole.SUPERADMIN,
+      password: belenPassword,
+    },
+    create: {
+      email: 'belenalvarez638@gmail.com',
+      name: 'Belén Alvarez',
+      password: belenPassword,
+      role: UserRole.SUPERADMIN,
+    },
+  });
 }
 
 main()
