@@ -92,6 +92,11 @@ export class CreatePaymentDto {
   paidAt?: string;
 
   @IsOptional()
+  @IsNumber()
+  @Min(0)
+  discountPercent?: number;
+
+  @IsOptional()
   @ValidateNested()
   @Type(() => ComplementPaymentDto)
   complement?: ComplementPaymentDto;
