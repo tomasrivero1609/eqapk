@@ -6,8 +6,37 @@ import {
   IsEnum,
   IsDateString,
   IsInt,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { Currency } from '@prisma/client';
+
+export class ComplementPaymentDto {
+  @IsNumber()
+  @Min(0)
+  amount: number;
+
+  @IsOptional()
+  @IsEnum(Currency)
+  currency?: Currency;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  exchangeRate?: number;
+
+  @IsOptional()
+  @IsDateString()
+  exchangeRateDate?: string;
+
+  @IsOptional()
+  @IsString()
+  method?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
 
 export class CreatePaymentDto {
   @IsString()
@@ -61,4 +90,9 @@ export class CreatePaymentDto {
   @IsOptional()
   @IsDateString()
   paidAt?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ComplementPaymentDto)
+  complement?: ComplementPaymentDto;
 }

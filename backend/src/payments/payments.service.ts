@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { Currency } from '@prisma/client';
 import { MailService } from '../mail/mail.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class PaymentsService {
@@ -20,14 +21,13 @@ export class PaymentsService {
       adultCovered,
       juvenileCovered,
       childCovered,
+      complement,
       ...rest
     } = createPaymentDto;
 
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
-      include: {
-        client: true,
-      },
+      include: { client: true },
     });
 
     if (!event) {
@@ -57,37 +57,74 @@ export class PaymentsService {
     const childCoveredValue = childCovered ?? 0;
     const totalCovered =
       adultCoveredValue + juvenileCoveredValue + childCoveredValue;
-
     const usesSections = totalCovered > 0;
 
-    const payment = await this.prisma.payment.create({
-      data: {
-        ...rest,
-        eventId,
-        paidAt: paidAt ? new Date(paidAt) : undefined,
-        exchangeRateDate: exchangeRateDate
-          ? new Date(exchangeRateDate)
+    const parsedPaidAt = paidAt ? new Date(paidAt) : undefined;
+    const parsedExchangeRateDate = exchangeRateDate
+      ? new Date(exchangeRateDate)
+      : undefined;
+
+    const primaryData = {
+      ...rest,
+      eventId,
+      paidAt: parsedPaidAt,
+      exchangeRateDate: parsedExchangeRateDate,
+      platesCovered: totalCovered > 0 ? totalCovered : platesCovered ?? undefined,
+      pricePerDishAtPayment:
+        !usesSections && platesCovered ? event.pricePerDish : undefined,
+      adultCovered: usesSections ? adultCoveredValue : undefined,
+      juvenileCovered: usesSections ? juvenileCoveredValue : undefined,
+      childCovered: usesSections ? childCoveredValue : undefined,
+      adultPriceAtPayment:
+        usesSections && adultCoveredValue > 0
+          ? sectionPrices.adultPrice
           : undefined,
-        platesCovered: totalCovered > 0 ? totalCovered : platesCovered ?? undefined,
-        pricePerDishAtPayment:
-          !usesSections && platesCovered ? event.pricePerDish : undefined,
-        adultCovered: usesSections ? adultCoveredValue : undefined,
-        juvenileCovered: usesSections ? juvenileCoveredValue : undefined,
-        childCovered: usesSections ? childCoveredValue : undefined,
-        adultPriceAtPayment:
-          usesSections && adultCoveredValue > 0
-            ? sectionPrices.adultPrice
-            : undefined,
-        juvenilePriceAtPayment:
-          usesSections && juvenileCoveredValue > 0
-            ? sectionPrices.juvenilePrice
-            : undefined,
-        childPriceAtPayment:
-          usesSections && childCoveredValue > 0
-            ? sectionPrices.childPrice
-            : undefined,
-      },
-    });
+      juvenilePriceAtPayment:
+        usesSections && juvenileCoveredValue > 0
+          ? sectionPrices.juvenilePrice
+          : undefined,
+      childPriceAtPayment:
+        usesSections && childCoveredValue > 0
+          ? sectionPrices.childPrice
+          : undefined,
+    };
+
+    if (complement) {
+      const groupId = randomUUID();
+      const complementData = {
+        eventId,
+        amount: complement.amount,
+        currency: complement.currency,
+        exchangeRate: complement.exchangeRate,
+        exchangeRateDate: complement.exchangeRateDate
+          ? new Date(complement.exchangeRateDate)
+          : undefined,
+        method: complement.method,
+        notes: complement.notes || `Complemento de pago`,
+        paidAt: parsedPaidAt,
+        groupId,
+      };
+
+      const [primary, comp] = await this.prisma.$transaction([
+        this.prisma.payment.create({ data: { ...primaryData, groupId } }),
+        this.prisma.payment.create({ data: complementData }),
+      ]);
+
+      if (event.client?.email) {
+        const totalDesc = `${primary.currency} ${primary.amount.toFixed(2)} + ${comp.currency} ${comp.amount.toFixed(2)}`;
+        await this.mailService.sendPaymentEmail({
+          to: event.client.email,
+          name: event.client.name,
+          eventName: event.name,
+          amount: totalDesc,
+          paidAt: (primary.paidAt || new Date()).toISOString().slice(0, 10),
+        });
+      }
+
+      return { primary, complement: comp, groupId };
+    }
+
+    const payment = await this.prisma.payment.create({ data: primaryData });
 
     if (event.client?.email) {
       await this.mailService.sendPaymentEmail({
@@ -105,9 +142,7 @@ export class PaymentsService {
   async findAll(eventId?: string) {
     return this.prisma.payment.findMany({
       where: eventId ? { eventId } : undefined,
-      orderBy: {
-        paidAt: 'desc',
-      },
+      orderBy: { paidAt: 'desc' },
     });
   }
 
@@ -120,19 +155,21 @@ export class PaymentsService {
       throw new NotFoundException('Pago no encontrado');
     }
 
-    await this.prisma.payment.delete({
-      where: { id },
-    });
+    if (payment.groupId) {
+      await this.prisma.payment.deleteMany({
+        where: { groupId: payment.groupId },
+      });
+      return { message: 'Pago compuesto eliminado correctamente' };
+    }
 
+    await this.prisma.payment.delete({ where: { id } });
     return { message: 'Pago eliminado correctamente' };
   }
 
   async getSummary() {
     const grouped = await this.prisma.payment.groupBy({
       by: ['currency'],
-      _sum: {
-        amount: true,
-      },
+      _sum: { amount: true },
     });
 
     const totals = {

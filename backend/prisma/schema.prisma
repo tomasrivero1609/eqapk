@@ -242,6 +242,7 @@ model Payment {
   childPriceAtPayment Float?
   method    String?
   notes     String?
+  groupId   String?
   paidAt    DateTime @default(now())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -250,6 +251,7 @@ model Payment {
   event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@index([eventId])
+  @@index([groupId])
 }
 
 model InventoryItem {
