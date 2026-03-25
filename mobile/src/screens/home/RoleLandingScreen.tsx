@@ -12,22 +12,21 @@ import { dolarService } from '../../services/dolarService';
 type LandingRoute = {
   key: string;
   label: string;
-  /** Abre una pantalla del stack Eventos (CreateVisit / CreateFranco) */
-  eventsStackScreen?: 'CreateVisit' | 'CreateFranco';
+  eventsStackScreen?: string;
 };
 
 const routesByRole: Record<UserRole, LandingRoute[]> = {
   [UserRole.ADMIN]: [
     { key: 'Events', label: 'Eventos' },
-    { key: 'Entrevista', label: 'Entrevista', eventsStackScreen: 'CreateVisit' },
-    { key: 'Franco', label: 'Franco', eventsStackScreen: 'CreateFranco' },
+    { key: 'Entrevista', label: 'Entrevistas', eventsStackScreen: 'EntrevistasList' },
+    { key: 'Franco', label: 'Francos', eventsStackScreen: 'FrancosList' },
     { key: 'Clients', label: 'Clientes' },
     { key: 'Demonstrations', label: 'Demostraciones' },
   ],
   [UserRole.SUPERADMIN]: [
     { key: 'Events', label: 'Eventos' },
-    { key: 'Entrevista', label: 'Entrevista', eventsStackScreen: 'CreateVisit' },
-    { key: 'Franco', label: 'Franco', eventsStackScreen: 'CreateFranco' },
+    { key: 'Entrevista', label: 'Entrevistas', eventsStackScreen: 'EntrevistasList' },
+    { key: 'Franco', label: 'Francos', eventsStackScreen: 'FrancosList' },
     { key: 'Clients', label: 'Clientes' },
     { key: 'Admin', label: 'Ingresos' },
     { key: 'Demonstrations', label: 'Demostraciones' },
@@ -36,8 +35,8 @@ const routesByRole: Record<UserRole, LandingRoute[]> = {
 
 const actionDescriptions: Record<string, string> = {
   Events: 'Crea y gestiona eventos',
-  Entrevista: 'Registra una entrevista con un cliente',
-  Franco: 'Registra un franco o dia libre',
+  Entrevista: 'Gestiona las entrevistas programadas',
+  Franco: 'Gestiona francos y dias libres',
   Clients: 'Administra tus clientes',
   Admin: 'Revisa ingresos totales',
   Demonstrations: 'Muestra los platos disponibles',

@@ -220,8 +220,10 @@ export default function CreateVisitScreen({ navigation }: any) {
                   <Text className={`text-xs font-semibold ${availability.available ? 'text-emerald-400' : 'text-amber-400'}`}>
                     {availability.available ? 'Fecha disponible' : `Esta fecha tiene ${availability.busyCount || 1} evento(s)`}
                   </Text>
+                ) : availability?.status === 'disabled' ? (
+                  <Text className="text-xs text-slate-400">Calendario no configurado. Se creará sin verificar.</Text>
                 ) : (
-                  <Text className="text-xs text-slate-400">No se pudo verificar disponibilidad.</Text>
+                  <Text className="text-xs text-amber-400">No se pudo verificar disponibilidad. Se creará de todas formas.</Text>
                 )}
               </View>
             )}

@@ -142,12 +142,16 @@ export class CalendarService {
   }
 
   async checkDateAvailability(date: string, eventType?: EventType): Promise<CalendarAvailabilityResult> {
+    this.logger.log(`checkDateAvailability called: date=${date}, eventType=${eventType}`);
+
     if (!this.isEnabled()) {
+      this.logger.warn('Calendar is disabled (GOOGLE_CALENDAR_ENABLED != true)');
       return { available: true, status: 'disabled' };
     }
 
     const token = await this.getAccessToken();
     if (!token) {
+      this.logger.warn('Failed to get access token');
       return { available: true, status: 'error' };
     }
 
@@ -156,6 +160,7 @@ export class CalendarService {
       this.logger.warn(`Missing calendar ID for type ${eventType || 'SALON'}`);
       return { available: true, status: 'error' };
     }
+    this.logger.log(`Using calendar ID: ${calendarId.substring(0, 20)}...`);
 
     const timezone =
       this.configService.get<string>('GOOGLE_CALENDAR_TIMEZONE') ||

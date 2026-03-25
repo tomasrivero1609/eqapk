@@ -68,6 +68,10 @@ export default function EventsListScreen({ navigation }: any) {
     return unsubscribe;
   }, [navigation, refetch]);
 
+  const salonEvents = (events || []).filter(
+    (e) => !e.eventType || e.eventType === EventType.SALON,
+  );
+
   if (isLoading) {
     return (
       <Screen className="items-center justify-center">
@@ -101,12 +105,6 @@ export default function EventsListScreen({ navigation }: any) {
               </View>
             </View>
             <View style={styles.badgesContainer}>
-              {item.eventType && item.eventType !== EventType.SALON && (
-                <Badge
-                  label={item.eventType === EventType.VISITA ? 'Entrevista' : 'Franco'}
-                  variant={item.eventType === EventType.VISITA ? 'info' : 'neutral'}
-                />
-              )}
               <Badge label={item.status} variant={statusVariant(item.status)} />
               {isOverdue && (
                 <View style={styles.overdueBadge}>
@@ -116,64 +114,47 @@ export default function EventsListScreen({ navigation }: any) {
             </View>
           </View>
 
-          {/* Métricas */}
-          {(!item.eventType || item.eventType === EventType.SALON) ? (
-            <View style={styles.metricsContainer}>
-              <View style={styles.metricItem}>
-                <View style={styles.metricIconContainer}>
-                  <Ionicons name="restaurant-outline" size={18} color="#c4b5fd" />
-                </View>
-                <View style={styles.metricContent}>
-                  <Text style={styles.metricLabel}>Contratados</Text>
-                  <Text style={[styles.metricValue, isCompact && styles.metricValueCompact]}>
-                    {item.dishCount}
-                  </Text>
-                </View>
+          <View style={styles.metricsContainer}>
+            <View style={styles.metricItem}>
+              <View style={styles.metricIconContainer}>
+                <Ionicons name="restaurant-outline" size={18} color="#c4b5fd" />
               </View>
-
-              <View style={styles.metricDivider} />
-
-              <View style={styles.metricItem}>
-                <View style={styles.metricIconContainer}>
-                  <Ionicons name="people-outline" size={18} color="#60a5fa" />
-                </View>
-                <View style={styles.metricContent}>
-                  <Text style={styles.metricLabel}>Asignados</Text>
-                  <Text style={[styles.metricValue, isCompact && styles.metricValueCompact]}>
-                    {totalGuests}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.metricDivider} />
-
-              <View style={styles.metricItem}>
-                <View style={styles.metricIconContainer}>
-                  <Ionicons name="cash-outline" size={18} color="#34d399" />
-                </View>
-                <View style={styles.metricContent}>
-                  <Text style={styles.metricLabel}>Total</Text>
-                  <Text style={[styles.metricValue, isCompact && styles.metricValueCompact]}>
-                    {formatCurrency(item.totalAmount, item.currency)}
-                  </Text>
-                </View>
+              <View style={styles.metricContent}>
+                <Text style={styles.metricLabel}>Contratados</Text>
+                <Text style={[styles.metricValue, isCompact && styles.metricValueCompact]}>
+                  {item.dishCount}
+                </Text>
               </View>
             </View>
-          ) : item.eventType === EventType.VISITA ? (
-            <View style={styles.metricsContainer}>
-              <View style={styles.metricItem}>
-                <View style={styles.metricIconContainer}>
-                  <Ionicons name="people-outline" size={18} color="#60a5fa" />
-                </View>
-                <View style={styles.metricContent}>
-                  <Text style={styles.metricLabel}>Personas</Text>
-                  <Text style={[styles.metricValue, isCompact && styles.metricValueCompact]}>
-                    {item.guestCount || 0}
-                  </Text>
-                </View>
+
+            <View style={styles.metricDivider} />
+
+            <View style={styles.metricItem}>
+              <View style={styles.metricIconContainer}>
+                <Ionicons name="people-outline" size={18} color="#60a5fa" />
+              </View>
+              <View style={styles.metricContent}>
+                <Text style={styles.metricLabel}>Asignados</Text>
+                <Text style={[styles.metricValue, isCompact && styles.metricValueCompact]}>
+                  {totalGuests}
+                </Text>
               </View>
             </View>
-          ) : null}
+
+            <View style={styles.metricDivider} />
+
+            <View style={styles.metricItem}>
+              <View style={styles.metricIconContainer}>
+                <Ionicons name="cash-outline" size={18} color="#34d399" />
+              </View>
+              <View style={styles.metricContent}>
+                <Text style={styles.metricLabel}>Total</Text>
+                <Text style={[styles.metricValue, isCompact && styles.metricValueCompact]}>
+                  {formatCurrency(item.totalAmount, item.currency)}
+                </Text>
+              </View>
+            </View>
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -220,7 +201,7 @@ export default function EventsListScreen({ navigation }: any) {
 
       {/* Lista de eventos */}
       <FlatList
-        data={events || []}
+        data={salonEvents}
         renderItem={renderEvent}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[

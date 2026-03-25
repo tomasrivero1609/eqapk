@@ -10,6 +10,10 @@ import EventDetailScreen from '../screens/events/EventDetailScreen';
 import CreateEventScreen from '../screens/events/CreateEventScreen';
 import CreateVisitScreen from '../screens/events/CreateVisitScreen';
 import CreateFrancoScreen from '../screens/events/CreateFrancoScreen';
+import EntrevistasListScreen from '../screens/events/EntrevistasListScreen';
+import EntrevistaDetailScreen from '../screens/events/EntrevistaDetailScreen';
+import FrancosListScreen from '../screens/events/FrancosListScreen';
+import FrancoDetailScreen from '../screens/events/FrancoDetailScreen';
 import CreatePaymentScreen from '../screens/events/CreatePaymentScreen';
 import PaymentDetailScreen from '../screens/events/PaymentDetailScreen';
 import EventsCalendarScreen from '../screens/events/EventsCalendarScreen';
@@ -63,7 +67,11 @@ function EventsStack({ isCompact }: { isCompact: boolean }) {
       <Stack.Screen name="EventDetail" component={EventDetailScreen} options={{ title: 'Detalle del evento' }} />
       <Stack.Screen name="EventSpecs" component={EventSpecsScreen} options={{ title: 'Especificaciones técnicas' }} />
       <Stack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Nuevo evento' }} />
+      <Stack.Screen name="EntrevistasList" component={EntrevistasListScreen} options={{ title: 'Entrevistas' }} />
+      <Stack.Screen name="EntrevistaDetail" component={EntrevistaDetailScreen} options={{ title: 'Detalle entrevista' }} />
       <Stack.Screen name="CreateVisit" component={CreateVisitScreen} options={{ title: 'Nueva entrevista' }} />
+      <Stack.Screen name="FrancosList" component={FrancosListScreen} options={{ title: 'Francos' }} />
+      <Stack.Screen name="FrancoDetail" component={FrancoDetailScreen} options={{ title: 'Detalle franco' }} />
       <Stack.Screen name="CreateFranco" component={CreateFrancoScreen} options={{ title: 'Nuevo franco' }} />
       <Stack.Screen name="CreatePayment" component={CreatePaymentScreen} options={{ title: 'Registrar pago' }} />
       <Stack.Screen name="PaymentDetail" component={PaymentDetailScreen} options={{ title: 'Detalle del pago' }} />
