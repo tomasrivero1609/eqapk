@@ -14,6 +14,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { MailModule } from './mail/mail.module';
 import { DemonstrationsModule } from './demonstrations/demonstrations.module';
 import { UsersModule } from './users/users.module';
+import { InventoryModule } from './inventory/inventory.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { UsersModule } from './users/users.module';
     MailModule,
     DemonstrationsModule,
     UsersModule,
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
