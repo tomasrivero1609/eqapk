@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,48 +14,89 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 import { eventService } from '../../services/eventService';
-import { Event, EventStatus, EventType } from '../../types';
+import { Event, EventType } from '../../types';
 import Screen from '../../components/ui/Screen';
 import EmptyState from '../../components/ui/EmptyState';
-import Badge from '../../components/ui/Badge';
-import Button from '../../components/ui/Button';
-import { formatLocalDate } from '../../utils/date';
 
-const statusVariant = (status: EventStatus) => {
-  switch (status) {
-    case EventStatus.CONFIRMED:
-      return 'success';
-    case EventStatus.IN_PROGRESS:
-      return 'info';
-    case EventStatus.COMPLETED:
-      return 'neutral';
-    case EventStatus.CANCELLED:
-      return 'danger';
-    default:
-      return 'warning';
-  }
+const toLocalDate = (dateStr: string): Date => {
+  const d = dateStr.slice(0, 10);
+  const [y, m, day] = d.split('-').map(Number);
+  return new Date(y, m - 1, day);
 };
+
+const getRelativeLabel = (dateStr: string): string => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const target = toLocalDate(dateStr);
+  const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Hoy';
+  if (diffDays === 1) return 'Mañana';
+  if (diffDays === -1) return 'Ayer';
+  if (diffDays > 1 && diffDays <= 7) return `En ${diffDays} días`;
+  if (diffDays < -1) return 'Pasada';
+  return '';
+};
+
+const isPast = (dateStr: string): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return toLocalDate(dateStr) < today;
+};
+
+const formatShortDate = (dateStr: string): string => {
+  const date = toLocalDate(dateStr);
+  const day = date.getDate();
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  return `${day} ${months[date.getMonth()]}`;
+};
+
+const getDayName = (dateStr: string): string => {
+  const date = toLocalDate(dateStr);
+  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  return days[date.getDay()];
+};
+
+type SectionItem =
+  | { type: 'header'; title: string }
+  | { type: 'entrevista'; data: Event };
 
 export default function EntrevistasListScreen({ navigation }: any) {
   const { data: allEvents, isLoading, refetch } = useQuery({
     queryKey: ['events'],
     queryFn: () => eventService.getAll(),
   });
-  const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const isCompact = width < 400;
-  const isLandscape = width > height;
-
-  const entrevistas = (allEvents || []).filter(
-    (e) => e.eventType === EventType.VISITA,
-  );
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      refetch();
-    });
+    const unsubscribe = navigation.addListener('focus', () => refetch());
     return unsubscribe;
   }, [navigation, refetch]);
+
+  const sections = useMemo(() => {
+    const entrevistas = (allEvents || [])
+      .filter((e) => e.eventType === EventType.VISITA)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const upcoming = entrevistas.filter((e) => !isPast(e.date));
+    const past = entrevistas.filter((e) => isPast(e.date)).reverse();
+
+    const items: SectionItem[] = [];
+
+    if (upcoming.length > 0) {
+      items.push({ type: 'header', title: 'Próximas' });
+      upcoming.forEach((e) => items.push({ type: 'entrevista', data: e }));
+    }
+
+    if (past.length > 0) {
+      items.push({ type: 'header', title: 'Pasadas' });
+      past.forEach((e) => items.push({ type: 'entrevista', data: e }));
+    }
+
+    return items;
+  }, [allEvents]);
 
   if (isLoading) {
     return (
@@ -65,70 +106,93 @@ export default function EntrevistasListScreen({ navigation }: any) {
     );
   }
 
-  const renderItem = ({ item }: { item: Event }) => (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      style={styles.cardWrapper}
-      onPress={() => navigation.navigate('EntrevistaDetail', { eventId: item.id })}
-    >
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.titleContainer}>
-            <Text style={[styles.title, isCompact && styles.titleCompact]} numberOfLines={2}>
-              {item.name}
-            </Text>
-            <View style={styles.dateRow}>
-              <Ionicons name="calendar-outline" size={14} color="#94a3b8" />
-              <Text style={styles.dateText}>{formatLocalDate(item.date)}</Text>
-            </View>
-            {item.startTime && (
-              <View style={styles.dateRow}>
-                <Ionicons name="time-outline" size={14} color="#94a3b8" />
-                <Text style={styles.dateText}>
-                  {item.startTime}{item.endTime ? ` - ${item.endTime}` : ''}
-                </Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.badgesContainer}>
-            <Badge label={item.status} variant={statusVariant(item.status)} />
-          </View>
+  const renderItem = ({ item }: { item: SectionItem }) => {
+    if (item.type === 'header') {
+      return (
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{item.title}</Text>
+        </View>
+      );
+    }
+
+    const e = item.data;
+    const past = isPast(e.date);
+    const relativeLabel = getRelativeLabel(e.date);
+    const isToday = relativeLabel === 'Hoy';
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        style={[styles.row, past && styles.rowPast]}
+        onPress={() => navigation.navigate('EntrevistaDetail', { eventId: e.id })}
+      >
+        <View style={[styles.dateBlock, isToday && styles.dateBlockToday]}>
+          <Text style={[styles.dateDay, isToday && styles.dateDayToday]}>{formatShortDate(e.date)}</Text>
+          <Text style={[styles.dateDayName, isToday && styles.dateDayNameToday]}>{getDayName(e.date)}</Text>
         </View>
 
-        {item.description ? (
-          <View style={styles.descriptionContainer}>
-            <Text style={styles.descriptionText} numberOfLines={2}>
-              {item.description}
+        <View style={styles.rowContent}>
+          <View style={styles.rowTop}>
+            <Text style={[styles.rowName, past && styles.rowNamePast]} numberOfLines={1}>
+              {e.name}
             </Text>
+            {relativeLabel && !past ? (
+              <View style={[styles.relativeBadge, isToday && styles.relativeBadgeToday]}>
+                <Text style={[styles.relativeText, isToday && styles.relativeTextToday]}>{relativeLabel}</Text>
+              </View>
+            ) : null}
           </View>
-        ) : null}
-      </View>
-    </TouchableOpacity>
-  );
+
+          {e.startTime ? (
+            <View style={styles.timeRow}>
+              <Ionicons name="time-outline" size={12} color={past ? '#475569' : '#64748b'} />
+              <Text style={[styles.timeText, past && styles.timeTextPast]}>
+                {e.startTime}{e.endTime ? ` - ${e.endTime}` : ''}
+              </Text>
+            </View>
+          ) : null}
+
+          {e.description ? (
+            <Text style={[styles.description, past && styles.descriptionPast]} numberOfLines={1}>
+              {e.description}
+            </Text>
+          ) : null}
+        </View>
+
+        <Ionicons name="chevron-forward" size={16} color={past ? '#334155' : '#475569'} />
+      </TouchableOpacity>
+    );
+  };
+
+  const entrevistasCount = sections.filter((s) => s.type === 'entrevista').length;
 
   return (
     <Screen>
-      <View style={[styles.header, { paddingTop: isLandscape ? 24 : 16 }]}>
-        <Button
-          label="Nueva entrevista"
-          iconName="add-circle-outline"
-          onPress={() => navigation.navigate('CreateVisit')}
-        />
-      </View>
-
       <FlatList
-        data={entrevistas}
+        data={sections}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) =>
+          item.type === 'header' ? `h-${item.title}` : `e-${item.data.id}`
+        }
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: insets.bottom + 120 },
+          { paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <TouchableOpacity
+            style={styles.fab}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('CreateVisit')}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+            <Text style={styles.fabText}>Nueva entrevista</Text>
+          </TouchableOpacity>
+        }
         ListEmptyComponent={
           <EmptyState
-            title="No hay entrevistas"
-            description="Crea tu primera entrevista para comenzar"
+            title="Sin entrevistas"
+            description="Agendá tu primera entrevista"
           />
         }
       />
@@ -137,72 +201,133 @@ export default function EntrevistasListScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 16,
   },
-  cardWrapper: {
-    marginBottom: 16,
-  },
-  card: {
-    backgroundColor: '#0f172a',
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  titleContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#f1f5f9',
-    marginBottom: 8,
-    lineHeight: 24,
-  },
-  titleCompact: {
-    fontSize: 16,
-  },
-  dateRow: {
+  fab: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 2,
-  },
-  dateText: {
-    fontSize: 13,
-    color: '#94a3b8',
-  },
-  badgesContainer: {
-    alignItems: 'flex-end',
+    justifyContent: 'center',
+    backgroundColor: '#7c3aed',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginBottom: 20,
     gap: 8,
   },
-  descriptionContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#1e293b',
+  fabText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
-  descriptionText: {
+  sectionHeader: {
+    paddingVertical: 8,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#0f172a',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    gap: 12,
+  },
+  rowPast: {
+    opacity: 0.55,
+  },
+  dateBlock: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#1e293b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateBlockToday: {
+    backgroundColor: '#7c3aed',
+  },
+  dateDay: {
     fontSize: 13,
+    fontWeight: '700',
+    color: '#e2e8f0',
+  },
+  dateDayToday: {
+    color: '#fff',
+  },
+  dateDayName: {
+    fontSize: 10,
+    color: '#64748b',
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  dateDayNameToday: {
+    color: '#e9d5ff',
+  },
+  rowContent: {
+    flex: 1,
+  },
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  rowName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#f1f5f9',
+    flex: 1,
+  },
+  rowNamePast: {
     color: '#94a3b8',
-    lineHeight: 18,
+  },
+  relativeBadge: {
+    backgroundColor: '#1e293b',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  relativeBadgeToday: {
+    backgroundColor: '#7c3aed',
+  },
+  relativeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#94a3b8',
+  },
+  relativeTextToday: {
+    color: '#fff',
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  timeText: {
+    fontSize: 12,
+    color: '#64748b',
+  },
+  timeTextPast: {
+    color: '#475569',
+  },
+  description: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 3,
+  },
+  descriptionPast: {
+    color: '#475569',
   },
 });

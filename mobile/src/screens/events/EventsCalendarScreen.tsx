@@ -5,7 +5,7 @@ import Screen from '../../components/ui/Screen';
 import Card from '../../components/ui/Card';
 import EmptyState from '../../components/ui/EmptyState';
 import { eventService } from '../../services/eventService';
-import { Event } from '../../types';
+import { Event, EventType } from '../../types';
 import { parseLocalDateString, formatLocalDate } from '../../utils/date';
 
 const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
@@ -46,9 +46,14 @@ export default function EventsCalendarScreen({ navigation }: any) {
   );
   const [selectedDate, setSelectedDate] = useState<Date>(today);
 
+  const salonEvents = useMemo(
+    () => (events || []).filter((e) => !e.eventType || e.eventType === EventType.SALON),
+    [events],
+  );
+
   const eventsByDay = useMemo(() => {
     const map = new Map<string, Event[]>();
-    (events || []).forEach((event) => {
+    salonEvents.forEach((event) => {
       const date = parseLocalDateString(event.date);
       const key = toDateKey(date);
       if (!map.has(key)) {
@@ -57,7 +62,7 @@ export default function EventsCalendarScreen({ navigation }: any) {
       map.get(key)?.push(event);
     });
     return map;
-  }, [events]);
+  }, [salonEvents]);
 
   const monthCells = useMemo(() => buildMonthGrid(currentMonth), [currentMonth]);
   const selectedKey = toDateKey(selectedDate);

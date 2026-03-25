@@ -41,11 +41,10 @@ export class CalendarService {
     }
 
     const payload = this.buildEventPayload(input);
-    const sendUpdates = input.attendeeEmail ? 'all' : 'none';
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
         calendarId,
-      )}/events?sendUpdates=${sendUpdates}`,
+      )}/events`,
       {
         method: 'POST',
         headers: {
@@ -238,7 +237,10 @@ export class CalendarService {
     };
 
     if (input.attendeeEmail) {
-      payload.attendees = [{ email: input.attendeeEmail }];
+      const existing = payload.description || '';
+      payload.description = existing
+        ? `${existing}\n\nContacto: ${input.attendeeEmail}`
+        : `Contacto: ${input.attendeeEmail}`;
     }
 
     return payload;

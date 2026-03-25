@@ -1,9 +1,11 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { Ionicons } from '@expo/vector-icons';
 import Screen from '../../components/ui/Screen';
-import Button from '../../components/ui/Button';
 import { useAuthStore } from '../../store/authStore';
 import { UserRole } from '../../types';
 import Card from '../../components/ui/Card';
@@ -12,41 +14,27 @@ import { dolarService } from '../../services/dolarService';
 type LandingRoute = {
   key: string;
   label: string;
-  eventsStackScreen?: string;
+  icon: string;
+  screen: string;
+  description: string;
 };
 
 const routesByRole: Record<UserRole, LandingRoute[]> = {
   [UserRole.ADMIN]: [
-    { key: 'Events', label: 'Eventos' },
-    { key: 'Entrevista', label: 'Entrevistas', eventsStackScreen: 'EntrevistasList' },
-    { key: 'Franco', label: 'Francos', eventsStackScreen: 'FrancosList' },
-    { key: 'Clients', label: 'Clientes' },
-    { key: 'Demonstrations', label: 'Demostraciones' },
+    { key: 'Events', label: 'Eventos', icon: 'calendar', screen: 'EventsList', description: 'Crea y gestiona eventos del salón' },
+    { key: 'Entrevistas', label: 'Entrevistas', icon: 'people', screen: 'EntrevistasList', description: 'Entrevistas programadas' },
+    { key: 'Francos', label: 'Francos', icon: 'sunny', screen: 'FrancosList', description: 'Días libres y francos' },
+    { key: 'Clients', label: 'Clientes', icon: 'person-circle', screen: 'ClientsList', description: 'Administra tus clientes' },
+    { key: 'Demonstrations', label: 'Demostraciones', icon: 'images', screen: 'Demonstrations', description: 'Galería de platos' },
   ],
   [UserRole.SUPERADMIN]: [
-    { key: 'Events', label: 'Eventos' },
-    { key: 'Entrevista', label: 'Entrevistas', eventsStackScreen: 'EntrevistasList' },
-    { key: 'Franco', label: 'Francos', eventsStackScreen: 'FrancosList' },
-    { key: 'Clients', label: 'Clientes' },
-    { key: 'Admin', label: 'Ingresos' },
-    { key: 'Demonstrations', label: 'Demostraciones' },
+    { key: 'Events', label: 'Eventos', icon: 'calendar', screen: 'EventsList', description: 'Crea y gestiona eventos del salón' },
+    { key: 'Entrevistas', label: 'Entrevistas', icon: 'people', screen: 'EntrevistasList', description: 'Entrevistas programadas' },
+    { key: 'Francos', label: 'Francos', icon: 'sunny', screen: 'FrancosList', description: 'Días libres y francos' },
+    { key: 'Clients', label: 'Clientes', icon: 'person-circle', screen: 'ClientsList', description: 'Administra tus clientes' },
+    { key: 'Admin', label: 'Ingresos', icon: 'stats-chart', screen: 'AdminSummary', description: 'Revisa ingresos totales' },
+    { key: 'Demonstrations', label: 'Demostraciones', icon: 'images', screen: 'Demonstrations', description: 'Galería de platos' },
   ],
-};
-
-const actionDescriptions: Record<string, string> = {
-  Events: 'Crea y gestiona eventos',
-  Entrevista: 'Gestiona las entrevistas programadas',
-  Franco: 'Gestiona francos y dias libres',
-  Clients: 'Administra tus clientes',
-  Admin: 'Revisa ingresos totales',
-  Demonstrations: 'Muestra los platos disponibles',
-};
-
-const goToEventsScreen = (navigation: any, screen: string) => {
-  navigation.navigate('MainTabs', {
-    screen: 'Events',
-    params: { screen },
-  });
 };
 
 export default function RoleLandingScreen({ navigation }: any) {
@@ -59,8 +47,8 @@ export default function RoleLandingScreen({ navigation }: any) {
   const roleLabel = role === UserRole.SUPERADMIN ? 'Superadmin' : 'Admin';
   const { width } = useWindowDimensions();
   const isCompact = width < 400;
-  const sectionPadding = isCompact ? 'px-4' : 'px-6';
   const insets = useSafeAreaInsets();
+
   const { data: dolarOficial, isLoading: isLoadingDolarOficial } = useQuery({
     queryKey: ['dolar-oficial'],
     queryFn: () => dolarService.getOficial(),
@@ -72,133 +60,239 @@ export default function RoleLandingScreen({ navigation }: any) {
     staleTime: 5 * 60 * 1000,
   });
 
+  const navigateTo = (item: LandingRoute) => {
+    if (item.key === 'Demonstrations') {
+      navigation.navigate('Demonstrations');
+      return;
+    }
+    navigation.navigate('MainTabs', { screen: item.screen });
+  };
+
   return (
     <Screen>
       <SafeAreaView className="flex-1">
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 140 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
           showsVerticalScrollIndicator={false}
         >
-          <View className={`${sectionPadding} ${isCompact ? 'pt-4' : 'pt-6'}`}>
-            <View className={isCompact ? 'flex-col' : 'flex-row items-center justify-between'}>
-              <View className={isCompact ? '' : 'flex-1 pr-3'}>
-                <Text
-                  className={isCompact ? 'text-2xl font-semibold text-white' : 'text-3xl font-semibold text-white'}
-                  numberOfLines={2}
-                >
-                  Bienvenido, {name}
+          {/* Header */}
+          <View style={styles.headerSection}>
+            <View style={styles.headerTop}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.greeting, isCompact && styles.greetingCompact]}>
+                  Hola, {name}
                 </Text>
-                <Text className="mt-2 text-sm text-slate-300">
-                  Rol: {roleLabel}
-                </Text>
+                <Text style={styles.roleText}>{roleLabel}</Text>
               </View>
-              <TouchableOpacity
-                onPress={logout}
-                className={isCompact ? 'mt-3 self-start rounded-full bg-slate-800 px-4 py-2' : 'rounded-full bg-slate-800 px-4 py-2'}
-              >
-                <Text className="text-xs font-semibold text-slate-200">Salir</Text>
+              <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+                <Ionicons name="log-out-outline" size={18} color="#94a3b8" />
               </TouchableOpacity>
             </View>
           </View>
 
-          <View className={`${isCompact ? 'mt-6' : 'mt-8'} ${sectionPadding}`}>
-            <Card className="bg-slate-900/90 border-violet-500/30">
-              <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-slate-100`}>
-                Panel de control
-              </Text>
-              <Text className={`${isCompact ? 'text-xs' : 'text-sm'} mt-2 text-slate-300`}>
-                Elige a donde queres ir y gestiona tu salon desde un solo lugar.
-              </Text>
-            </Card>
-          </View>
-          <View className={`mt-4 ${sectionPadding} space-y-3`}>
-            <Card>
-              <Text className="text-xs font-semibold text-slate-400">
-                Dolar oficial
-              </Text>
-              {isLoadingDolarOficial && (
-                <Text className="mt-1 text-sm text-slate-200">Cargando...</Text>
-              )}
-              {!isLoadingDolarOficial && dolarOficial && (
-                <>
-              <Text className={`${isCompact ? 'text-sm' : 'text-base'} mt-1 font-semibold text-slate-100`}>
-                Compra {dolarOficial.compra} - Venta {dolarOficial.venta}
-              </Text>
-                  <Text className="mt-1 text-xs text-slate-500">
-                    Actualizado {new Date(dolarOficial.fechaActualizacion).toLocaleString('es-AR')}
+          {/* Dólar cards */}
+          <View style={styles.dolarSection}>
+            <View style={styles.dolarRow}>
+              <View style={[styles.dolarCard, { marginRight: 6 }]}>
+                <Text style={styles.dolarLabel}>Dólar oficial</Text>
+                {isLoadingDolarOficial ? (
+                  <Text style={styles.dolarLoading}>...</Text>
+                ) : dolarOficial ? (
+                  <Text style={styles.dolarValue}>
+                    ${dolarOficial.venta}
                   </Text>
-                </>
-              )}
-              {!isLoadingDolarOficial && !dolarOficial && (
-                <Text className="mt-1 text-sm text-slate-300">
-                  No disponible por ahora.
-                </Text>
-              )}
-            </Card>
-            <Card>
-              <Text className="text-xs font-semibold text-slate-400">
-                Dolar blue
-              </Text>
-              {isLoadingDolarBlue && (
-                <Text className="mt-1 text-sm text-slate-200">Cargando...</Text>
-              )}
-              {!isLoadingDolarBlue && dolarBlue && (
-                <>
-              <Text className={`${isCompact ? 'text-sm' : 'text-base'} mt-1 font-semibold text-slate-100`}>
-                Compra {dolarBlue.compra} - Venta {dolarBlue.venta}
-              </Text>
-                  <Text className="mt-1 text-xs text-slate-500">
-                    Actualizado {new Date(dolarBlue.fechaActualizacion).toLocaleString('es-AR')}
+                ) : (
+                  <Text style={styles.dolarLoading}>N/D</Text>
+                )}
+              </View>
+              <View style={[styles.dolarCard, { marginLeft: 6 }]}>
+                <Text style={styles.dolarLabel}>Dólar blue</Text>
+                {isLoadingDolarBlue ? (
+                  <Text style={styles.dolarLoading}>...</Text>
+                ) : dolarBlue ? (
+                  <Text style={styles.dolarValue}>
+                    ${dolarBlue.venta}
                   </Text>
-                </>
-              )}
-              {!isLoadingDolarBlue && !dolarBlue && (
-                <Text className="mt-1 text-sm text-slate-300">
-                  No disponible por ahora.
-                </Text>
-              )}
-            </Card>
+                ) : (
+                  <Text style={styles.dolarLoading}>N/D</Text>
+                )}
+              </View>
+            </View>
           </View>
 
-          <View className={`mt-6 ${sectionPadding} flex-row flex-wrap ${isCompact ? 'gap-3' : 'gap-4'}`}>
-            {actions.map((item) => (
-              <TouchableOpacity
-                key={item.key}
-                onPress={() => {
-                  if (item.key === 'Demonstrations') {
-                    navigation.navigate('Demonstrations');
-                    return;
-                  }
-                  if (item.eventsStackScreen) {
-                    goToEventsScreen(navigation, item.eventsStackScreen);
-                    return;
-                  }
-                  navigation.replace('MainTabs', { initialTab: item.key });
-                }}
-                className={isCompact ? 'w-full' : 'w-[48%]'}
-              >
-                <Card className={isCompact ? 'h-24 justify-between' : 'h-28 justify-between'}>
-                <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-slate-100`}>
-                  {item.label}
-                </Text>
-                <Text className="text-xs text-slate-400">
-                  {actionDescriptions[item.key]}
-                </Text>
-              </Card>
-              </TouchableOpacity>
-            ))}
+          {/* Action grid */}
+          <View style={styles.actionsSection}>
+            <Text style={styles.sectionTitle}>Accesos rápidos</Text>
+            <View style={[styles.actionsGrid, isCompact && styles.actionsGridCompact]}>
+              {actions.map((item) => (
+                <TouchableOpacity
+                  key={item.key}
+                  onPress={() => navigateTo(item)}
+                  style={[styles.actionCard, isCompact && styles.actionCardCompact]}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.actionIconContainer}>
+                    <Ionicons name={item.icon as any} size={22} color="#c4b5fd" />
+                  </View>
+                  <Text style={styles.actionLabel}>{item.label}</Text>
+                  <Text style={styles.actionDescription} numberOfLines={1}>
+                    {item.description}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
-          <View className={`mt-6 ${sectionPadding}`}>
-            <Button
-              label="Ir al panel"
-              onPress={() => navigation.replace('MainTabs', { initialTab: 'Events' })}
-              className="bg-violet-600"
-            />
+          {/* Footer */}
+          <View style={styles.footer}>
+            <View style={styles.footerDivider} />
+            <Text style={styles.footerText}>
+              Desarrollado por Tomás Rivero — 2026
+            </Text>
           </View>
         </ScrollView>
       </SafeAreaView>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  headerSection: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  greeting: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#f1f5f9',
+  },
+  greetingCompact: {
+    fontSize: 24,
+  },
+  roleText: {
+    fontSize: 13,
+    color: '#64748b',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  logoutButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1e293b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dolarSection: {
+    paddingHorizontal: 20,
+    marginTop: 20,
+  },
+  dolarRow: {
+    flexDirection: 'row',
+  },
+  dolarCard: {
+    flex: 1,
+    backgroundColor: '#0f172a',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  dolarLabel: {
+    fontSize: 11,
+    color: '#64748b',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dolarValue: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#e2e8f0',
+    marginTop: 6,
+  },
+  dolarLoading: {
+    fontSize: 16,
+    color: '#475569',
+    marginTop: 6,
+  },
+  actionsSection: {
+    paddingHorizontal: 20,
+    marginTop: 28,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#64748b',
+    marginBottom: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  actionsGridCompact: {
+    gap: 10,
+  },
+  actionCard: {
+    width: '47%',
+    backgroundColor: '#0f172a',
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    minHeight: 120,
+    justifyContent: 'space-between',
+  },
+  actionCardCompact: {
+    width: '100%',
+    minHeight: 80,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 16,
+  },
+  actionIconContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    backgroundColor: '#1e293b',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  actionLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#f1f5f9',
+  },
+  actionDescription: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 4,
+  },
+  footer: {
+    paddingHorizontal: 20,
+    marginTop: 40,
+    alignItems: 'center',
+  },
+  footerDivider: {
+    width: 60,
+    height: 1,
+    backgroundColor: '#1e293b',
+    marginBottom: 16,
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#334155',
+    fontWeight: '500',
+  },
+});

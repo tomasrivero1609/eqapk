@@ -102,8 +102,8 @@ export default function FrancoDetailScreen({ route, navigation }: any) {
           />
           {franco.description ? (
             <InfoRow
-              icon="document-text-outline"
-              label="Descripción"
+              icon="people-outline"
+              label="Personas asignadas"
               value={franco.description}
             />
           ) : null}

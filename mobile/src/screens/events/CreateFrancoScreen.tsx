@@ -35,7 +35,7 @@ const parseLocalDate = (value?: string) => {
 
 interface FormData {
   name: string;
-  description: string;
+  people: string;
   date: string;
   notes: string;
 }
@@ -50,7 +50,7 @@ export default function CreateFrancoScreen({ navigation }: any) {
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
-    description: '',
+    people: '',
     date: '',
     notes: '',
   });
@@ -85,8 +85,8 @@ export default function CreateFrancoScreen({ navigation }: any) {
   const handleSubmit = async () => {
     if (showDatePicker) setShowDatePicker(false);
 
-    if (!formData.name || !formData.date) {
-      Alert.alert('Error', 'Completa el motivo y la fecha');
+    if (!formData.name || !formData.date || !formData.people.trim()) {
+      Alert.alert('Error', 'Completa el motivo, las personas y la fecha');
       return;
     }
 
@@ -98,11 +98,11 @@ export default function CreateFrancoScreen({ navigation }: any) {
 
     if (availability?.status === 'ok' && !availability.available) {
       Alert.alert(
-        'Fecha con eventos',
-        `Ya hay ${availability.busyCount || 1} evento(s) en esa fecha. ¿Deseas continuar de todas formas?`,
+        'Fecha ocupada',
+        `Ya hay ${availability.busyCount || 1} franco(s) registrado(s) en esa fecha. ¿Deseas agregar otro de todas formas?`,
         [
           { text: 'Cancelar', style: 'cancel' },
-          { text: 'Continuar', onPress: () => saveFranco() },
+          { text: 'Agregar igual', onPress: () => saveFranco() },
         ],
       );
       return;
@@ -118,7 +118,7 @@ export default function CreateFrancoScreen({ navigation }: any) {
       startTime: '00:00',
       guestCount: 0,
       eventType: EventType.FRANCO,
-      description: formData.description?.trim() || undefined,
+      description: formData.people?.trim() || undefined,
       notes: formData.notes?.trim() || undefined,
     };
 
@@ -153,10 +153,10 @@ export default function CreateFrancoScreen({ navigation }: any) {
           />
 
           <Input
-            label="Descripcion"
-            placeholder="Detalle opcional"
-            value={formData.description}
-            onChangeText={(text) => setFormData({ ...formData, description: text })}
+            label="Personas asignadas"
+            placeholder="Ej: Juan, María (separar con coma)"
+            value={formData.people}
+            onChangeText={(text) => setFormData({ ...formData, people: text })}
           />
 
           <View className="space-y-2">
@@ -181,7 +181,7 @@ export default function CreateFrancoScreen({ navigation }: any) {
                   <Text className="text-xs text-slate-400">Verificando disponibilidad...</Text>
                 ) : availability?.status === 'ok' ? (
                   <Text className={`text-xs font-semibold ${availability.available ? 'text-emerald-400' : 'text-amber-400'}`}>
-                    {availability.available ? 'Fecha disponible' : `Esta fecha tiene ${availability.busyCount || 1} evento(s)`}
+                    {availability.available ? 'Fecha libre' : `Ya hay ${availability.busyCount || 1} franco(s) en esta fecha`}
                   </Text>
                 ) : availability?.status === 'disabled' ? (
                   <Text className="text-xs text-slate-400">Calendario no configurado. Se creará sin verificar.</Text>

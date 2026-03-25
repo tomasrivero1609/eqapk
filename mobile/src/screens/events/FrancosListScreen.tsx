@@ -1,11 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  useWindowDimensions,
   StyleSheet,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
@@ -14,46 +13,86 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 import { eventService } from '../../services/eventService';
-import { Event, EventStatus, EventType } from '../../types';
+import { Event, EventType } from '../../types';
 import Screen from '../../components/ui/Screen';
 import EmptyState from '../../components/ui/EmptyState';
-import Badge from '../../components/ui/Badge';
-import Button from '../../components/ui/Button';
-import { formatLocalDate } from '../../utils/date';
 
-const statusVariant = (status: EventStatus) => {
-  switch (status) {
-    case EventStatus.CONFIRMED:
-      return 'success';
-    case EventStatus.COMPLETED:
-      return 'neutral';
-    case EventStatus.CANCELLED:
-      return 'danger';
-    default:
-      return 'warning';
-  }
+const toLocalDate = (dateStr: string): Date => {
+  const d = dateStr.slice(0, 10);
+  const [y, m, day] = d.split('-').map(Number);
+  return new Date(y, m - 1, day);
 };
+
+const isPast = (dateStr: string): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return toLocalDate(dateStr) < today;
+};
+
+const isToday = (dateStr: string): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return toLocalDate(dateStr).getTime() === today.getTime();
+};
+
+const formatFullDate = (dateStr: string): string => {
+  const date = toLocalDate(dateStr);
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+};
+
+const getDateNumber = (dateStr: string): string => {
+  return String(toLocalDate(dateStr).getDate());
+};
+
+const getMonthShort = (dateStr: string): string => {
+  const months = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+  return months[toLocalDate(dateStr).getMonth()];
+};
+
+type ListItem =
+  | { type: 'header'; title: string }
+  | { type: 'franco'; data: Event; isLast: boolean };
 
 export default function FrancosListScreen({ navigation }: any) {
   const { data: allEvents, isLoading, refetch } = useQuery({
     queryKey: ['events'],
     queryFn: () => eventService.getAll(),
   });
-  const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const isCompact = width < 400;
-  const isLandscape = width > height;
-
-  const francos = (allEvents || []).filter(
-    (e) => e.eventType === EventType.FRANCO,
-  );
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      refetch();
-    });
+    const unsubscribe = navigation.addListener('focus', () => refetch());
     return unsubscribe;
   }, [navigation, refetch]);
+
+  const listItems = useMemo(() => {
+    const francos = (allEvents || [])
+      .filter((e) => e.eventType === EventType.FRANCO)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const upcoming = francos.filter((e) => !isPast(e.date));
+    const past = francos.filter((e) => isPast(e.date)).reverse();
+
+    const items: ListItem[] = [];
+
+    if (upcoming.length > 0) {
+      items.push({ type: 'header', title: 'Próximos' });
+      upcoming.forEach((e, i) =>
+        items.push({ type: 'franco', data: e, isLast: i === upcoming.length - 1 }),
+      );
+    }
+
+    if (past.length > 0) {
+      items.push({ type: 'header', title: 'Pasados' });
+      past.forEach((e, i) =>
+        items.push({ type: 'franco', data: e, isLast: i === past.length - 1 }),
+      );
+    }
+
+    return items;
+  }, [allEvents]);
 
   if (isLoading) {
     return (
@@ -63,62 +102,93 @@ export default function FrancosListScreen({ navigation }: any) {
     );
   }
 
-  const renderItem = ({ item }: { item: Event }) => (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      style={styles.cardWrapper}
-      onPress={() => navigation.navigate('FrancoDetail', { eventId: item.id })}
-    >
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <View style={styles.titleContainer}>
-            <Text style={[styles.title, isCompact && styles.titleCompact]} numberOfLines={2}>
-              {item.name}
+  const renderItem = ({ item }: { item: ListItem }) => {
+    if (item.type === 'header') {
+      return (
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{item.title}</Text>
+        </View>
+      );
+    }
+
+    const franco = item.data;
+    const past = isPast(franco.date);
+    const today = isToday(franco.date);
+
+    return (
+      <TouchableOpacity
+        activeOpacity={0.85}
+        style={styles.timelineRow}
+        onPress={() => navigation.navigate('FrancoDetail', { eventId: franco.id })}
+      >
+        {/* Timeline left: date pill + line */}
+        <View style={styles.timelineLeft}>
+          <View style={[
+            styles.datePill,
+            today && styles.datePillToday,
+            past && styles.datePillPast,
+          ]}>
+            <Text style={[styles.dateNumber, today && styles.dateNumberToday, past && styles.dateNumberPast]}>
+              {getDateNumber(franco.date)}
             </Text>
-            <View style={styles.dateRow}>
-              <Ionicons name="calendar-outline" size={14} color="#94a3b8" />
-              <Text style={styles.dateText}>{formatLocalDate(item.date)}</Text>
-            </View>
+            <Text style={[styles.dateMonth, today && styles.dateMonthToday, past && styles.dateMonthPast]}>
+              {getMonthShort(franco.date)}
+            </Text>
           </View>
-          <View style={styles.badgesContainer}>
-            <Badge label={item.status} variant={statusVariant(item.status)} />
-          </View>
+          {!item.isLast && <View style={[styles.timelineLine, past && styles.timelineLinePast]} />}
         </View>
 
-        {item.description ? (
-          <View style={styles.descriptionContainer}>
-            <Text style={styles.descriptionText} numberOfLines={2}>
-              {item.description}
+        {/* Content */}
+        <View style={[styles.timelineContent, past && styles.timelineContentPast]}>
+          <View style={styles.contentHeader}>
+            <Ionicons name="sunny-outline" size={16} color={past ? '#475569' : '#fbbf24'} />
+            <Text style={[styles.francoName, past && styles.francoNamePast]} numberOfLines={1}>
+              {franco.name}
             </Text>
           </View>
-        ) : null}
-      </View>
-    </TouchableOpacity>
-  );
+          <Text style={[styles.francoDate, past && styles.francoDatePast]}>
+            {formatFullDate(franco.date)}
+          </Text>
+          {franco.description ? (
+            <View style={styles.peopleRow}>
+              <Ionicons name="person-outline" size={12} color={past ? '#475569' : '#64748b'} />
+              <Text style={[styles.francoDesc, past && styles.francoDescPast]} numberOfLines={1}>
+                {franco.description}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <Screen>
-      <View style={[styles.header, { paddingTop: isLandscape ? 24 : 16 }]}>
-        <Button
-          label="Nuevo franco"
-          iconName="add-circle-outline"
-          onPress={() => navigation.navigate('CreateFranco')}
-        />
-      </View>
-
       <FlatList
-        data={francos}
+        data={listItems}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) =>
+          item.type === 'header' ? `h-${item.title}` : `f-${item.data.id}`
+        }
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: insets.bottom + 120 },
+          { paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <TouchableOpacity
+            style={styles.fab}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('CreateFranco')}
+          >
+            <Ionicons name="add" size={20} color="#fff" />
+            <Text style={styles.fabText}>Nuevo franco</Text>
+          </TouchableOpacity>
+        }
         ListEmptyComponent={
           <EmptyState
-            title="No hay francos registrados"
-            description="Registra un franco o día libre"
+            title="Sin francos registrados"
+            description="Registrá un día libre o franco"
           />
         }
       />
@@ -127,72 +197,142 @@ export default function FrancosListScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 16,
   },
-  cardWrapper: {
-    marginBottom: 16,
-  },
-  card: {
-    backgroundColor: '#0f172a',
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  titleContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#f1f5f9',
-    marginBottom: 8,
-    lineHeight: 24,
-  },
-  titleCompact: {
-    fontSize: 16,
-  },
-  dateRow: {
+  fab: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginTop: 2,
-  },
-  dateText: {
-    fontSize: 13,
-    color: '#94a3b8',
-  },
-  badgesContainer: {
-    alignItems: 'flex-end',
+    justifyContent: 'center',
+    backgroundColor: '#7c3aed',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginBottom: 20,
     gap: 8,
   },
-  descriptionContainer: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#1e293b',
+  fabText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
-  descriptionText: {
-    fontSize: 13,
+  sectionHeader: {
+    paddingVertical: 8,
+    marginTop: 8,
+    marginBottom: 4,
+    paddingLeft: 4,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#475569',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    minHeight: 80,
+  },
+  timelineLeft: {
+    width: 56,
+    alignItems: 'center',
+  },
+  datePill: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#1e293b',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  datePillToday: {
+    backgroundColor: '#f59e0b',
+  },
+  datePillPast: {
+    backgroundColor: '#0f172a',
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  dateNumber: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#e2e8f0',
+  },
+  dateNumberToday: {
+    color: '#0f172a',
+  },
+  dateNumberPast: {
+    color: '#475569',
+  },
+  dateMonth: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#64748b',
+    marginTop: -1,
+  },
+  dateMonthToday: {
+    color: '#451a03',
+  },
+  dateMonthPast: {
+    color: '#334155',
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: '#1e293b',
+    marginVertical: 4,
+  },
+  timelineLinePast: {
+    backgroundColor: '#0f172a',
+  },
+  timelineContent: {
+    flex: 1,
+    backgroundColor: '#0f172a',
+    borderRadius: 14,
+    padding: 14,
+    marginLeft: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  timelineContentPast: {
+    opacity: 0.5,
+  },
+  contentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  francoName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#f1f5f9',
+    flex: 1,
+  },
+  francoNamePast: {
     color: '#94a3b8',
-    lineHeight: 18,
+  },
+  francoDate: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 4,
+  },
+  francoDatePast: {
+    color: '#475569',
+  },
+  peopleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  francoDesc: {
+    fontSize: 12,
+    color: '#64748b',
+    flex: 1,
+  },
+  francoDescPast: {
+    color: '#475569',
   },
 });
