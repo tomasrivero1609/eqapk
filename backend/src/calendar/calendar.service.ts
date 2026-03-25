@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createSign } from 'crypto';
+import { EventType } from '@prisma/client';
 
 interface CalendarEventInput {
   title: string;
@@ -8,6 +9,7 @@ interface CalendarEventInput {
   date: Date;
   startTime: string;
   endTime?: string | null;
+  attendeeEmail?: string;
 }
 
 export interface CalendarAvailabilityResult {
@@ -22,7 +24,7 @@ export class CalendarService {
 
   constructor(private readonly configService: ConfigService) {}
 
-  async createEvent(input: CalendarEventInput): Promise<string | null> {
+  async createEvent(input: CalendarEventInput, eventType?: EventType): Promise<string | null> {
     if (!this.isEnabled()) {
       return null;
     }
@@ -32,17 +34,18 @@ export class CalendarService {
       return null;
     }
 
-    const calendarId = this.configService.get<string>('GOOGLE_CALENDAR_ID');
+    const calendarId = this.getCalendarId(eventType);
     if (!calendarId) {
-      this.logger.warn('Missing GOOGLE_CALENDAR_ID');
+      this.logger.warn(`Missing calendar ID for type ${eventType || 'SALON'}`);
       return null;
     }
 
     const payload = this.buildEventPayload(input);
+    const sendUpdates = input.attendeeEmail ? 'all' : 'none';
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
         calendarId,
-      )}/events`,
+      )}/events?sendUpdates=${sendUpdates}`,
       {
         method: 'POST',
         headers: {
@@ -66,6 +69,7 @@ export class CalendarService {
   async updateEvent(
     calendarEventId: string,
     input: CalendarEventInput,
+    eventType?: EventType,
   ): Promise<void> {
     if (!this.isEnabled()) {
       return;
@@ -76,9 +80,9 @@ export class CalendarService {
       return;
     }
 
-    const calendarId = this.configService.get<string>('GOOGLE_CALENDAR_ID');
+    const calendarId = this.getCalendarId(eventType);
     if (!calendarId) {
-      this.logger.warn('Missing GOOGLE_CALENDAR_ID');
+      this.logger.warn(`Missing calendar ID for type ${eventType || 'SALON'}`);
       return;
     }
 
@@ -103,7 +107,7 @@ export class CalendarService {
     }
   }
 
-  async deleteEvent(calendarEventId: string): Promise<void> {
+  async deleteEvent(calendarEventId: string, eventType?: EventType): Promise<void> {
     if (!this.isEnabled()) {
       return;
     }
@@ -113,9 +117,9 @@ export class CalendarService {
       return;
     }
 
-    const calendarId = this.configService.get<string>('GOOGLE_CALENDAR_ID');
+    const calendarId = this.getCalendarId(eventType);
     if (!calendarId) {
-      this.logger.warn('Missing GOOGLE_CALENDAR_ID');
+      this.logger.warn(`Missing calendar ID for type ${eventType || 'SALON'}`);
       return;
     }
 
@@ -137,7 +141,7 @@ export class CalendarService {
     }
   }
 
-  async checkDateAvailability(date: string): Promise<CalendarAvailabilityResult> {
+  async checkDateAvailability(date: string, eventType?: EventType): Promise<CalendarAvailabilityResult> {
     if (!this.isEnabled()) {
       return { available: true, status: 'disabled' };
     }
@@ -147,9 +151,9 @@ export class CalendarService {
       return { available: true, status: 'error' };
     }
 
-    const calendarId = this.configService.get<string>('GOOGLE_CALENDAR_ID');
+    const calendarId = this.getCalendarId(eventType);
     if (!calendarId) {
-      this.logger.warn('Missing GOOGLE_CALENDAR_ID');
+      this.logger.warn(`Missing calendar ID for type ${eventType || 'SALON'}`);
       return { available: true, status: 'error' };
     }
 
@@ -188,6 +192,17 @@ export class CalendarService {
     return { available: busy === 0, status: 'ok', busyCount: busy };
   }
 
+  private getCalendarId(eventType?: EventType): string | undefined {
+    switch (eventType) {
+      case EventType.VISITA:
+        return this.configService.get<string>('GOOGLE_CALENDAR_ID_VISITAS');
+      case EventType.FRANCO:
+        return this.configService.get<string>('GOOGLE_CALENDAR_ID_FRANCO');
+      default:
+        return this.configService.get<string>('GOOGLE_CALENDAR_ID_SALON');
+    }
+  }
+
   private isEnabled(): boolean {
     return this.configService.get<string>('GOOGLE_CALENDAR_ENABLED') === 'true';
   }
@@ -204,7 +219,7 @@ export class CalendarService {
       input.endTime || undefined,
     );
 
-    return {
+    const payload: Record<string, unknown> = {
       summary: input.title,
       description: input.description,
       start: {
@@ -216,6 +231,12 @@ export class CalendarService {
         timeZone: timezone,
       },
     };
+
+    if (input.attendeeEmail) {
+      payload.attendees = [{ email: input.attendeeEmail }];
+    }
+
+    return payload;
   }
 
   private buildDateTimes(date: string, startTime: string, endTime?: string) {

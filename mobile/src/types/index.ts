@@ -67,6 +67,7 @@ export interface Event {
   cotillon?: string;
   photographer?: string;
   optionalContracted?: string;
+  eventType: EventType;
   currency: Currency;
   totalAmount: number;
   capacity?: number;
@@ -89,6 +90,12 @@ export enum EventStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
+}
+
+export enum EventType {
+  SALON = 'SALON',
+  VISITA = 'VISITA',
+  FRANCO = 'FRANCO',
 }
 
 export enum Currency {
@@ -147,6 +154,8 @@ export interface CreateEventDto {
   status?: EventStatus;
   notes?: string;
   clientId?: string;
+  eventType?: EventType;
+  attendeeEmail?: string;
 }
 
 export interface CalendarAvailability {

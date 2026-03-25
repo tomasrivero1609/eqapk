@@ -46,9 +46,11 @@ export class EventsService {
     const quarterlyAdjustmentPercent =
       createEventDto.quarterlyAdjustmentPercent ?? 0;
 
+    const { attendeeEmail, ...eventData } = createEventDto;
+
     const event = await this.prisma.event.create({
       data: {
-        ...createEventDto,
+        ...eventData,
         date: new Date(createEventDto.date),
         totalAmount,
         dishCount,
@@ -95,7 +97,8 @@ export class EventsService {
         date: event.date,
         startTime: event.startTime,
         endTime: event.endTime || undefined,
-      });
+        attendeeEmail: attendeeEmail || undefined,
+      }, event.eventType);
 
       if (calendarEventId) {
         await this.prisma.event.update({
@@ -267,7 +270,7 @@ export class EventsService {
           date: updatedEvent.date,
           startTime: updatedEvent.startTime,
           endTime: updatedEvent.endTime || undefined,
-        });
+        }, updatedEvent.eventType);
       } catch (error) {
         this.logger.warn(
           `Calendar update error: ${(error as Error).message}`,
@@ -278,21 +281,23 @@ export class EventsService {
     return updatedEvent;
   }
 
-  async checkAvailability(date: string, eventId?: string) {
+  async checkAvailability(date: string, eventId?: string, eventType?: string) {
+    const resolvedType = (eventType as 'SALON' | 'VISITA' | 'FRANCO') || undefined;
+
     if (!eventId) {
-      return this.calendarService.checkDateAvailability(date);
+      return this.calendarService.checkDateAvailability(date, resolvedType);
     }
 
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
-      select: { id: true, date: true, calendarEventId: true },
+      select: { id: true, date: true, calendarEventId: true, eventType: true },
     });
 
     if (!event || !event.calendarEventId) {
-      return this.calendarService.checkDateAvailability(date);
+      return this.calendarService.checkDateAvailability(date, resolvedType || event?.eventType);
     }
 
-    const availability = await this.calendarService.checkDateAvailability(date);
+    const availability = await this.calendarService.checkDateAvailability(date, event.eventType);
     if (availability.status !== 'ok') {
       return availability;
     }
@@ -483,7 +488,7 @@ export class EventsService {
 
     if (event.calendarEventId) {
       try {
-        await this.calendarService.deleteEvent(event.calendarEventId);
+        await this.calendarService.deleteEvent(event.calendarEventId, event.eventType);
       } catch (error) {
         this.logger.warn(
           `Calendar delete error: ${(error as Error).message}`,

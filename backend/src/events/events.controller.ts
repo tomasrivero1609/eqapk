@@ -35,11 +35,12 @@ export class EventsController {
   checkAvailability(
     @Query('date') date: string,
     @Query('eventId') eventId?: string,
+    @Query('eventType') eventType?: string,
   ) {
     if (!date) {
       throw new BadRequestException('Falta la fecha');
     }
-    return this.eventsService.checkAvailability(date, eventId);
+    return this.eventsService.checkAvailability(date, eventId, eventType);
   }
 
   @Get(':id')

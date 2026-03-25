@@ -7,7 +7,7 @@ import {
   IsEnum,
   IsNumber,
 } from 'class-validator';
-import { EventStatus, Currency } from '@prisma/client';
+import { EventStatus, Currency, EventType } from '@prisma/client';
 
 export class CreateEventDto {
   @IsString()
@@ -196,4 +196,12 @@ export class CreateEventDto {
   @IsOptional()
   @IsString()
   optionalContracted?: string;
+
+  @IsOptional()
+  @IsEnum(EventType)
+  eventType?: EventType;
+
+  @IsOptional()
+  @IsString()
+  attendeeEmail?: string;
 }

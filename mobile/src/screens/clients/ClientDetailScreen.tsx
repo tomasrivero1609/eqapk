@@ -80,7 +80,7 @@ export default function ClientDetailScreen({ route, navigation }: any) {
             </View>
           ) : (
             <View className="mt-4 space-y-3">
-              {events.map((event: Client['events'][number]) => (
+              {events.map((event: NonNullable<Client['events']>[number]) => (
                 <TouchableOpacity
                   key={event.id}
                   onPress={() =>

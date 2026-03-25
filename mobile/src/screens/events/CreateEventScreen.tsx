@@ -14,7 +14,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { eventService } from '../../services/eventService';
 import { clientService } from '../../services/clientService';
 import { dolarService } from '../../services/dolarService';
-import { CreateEventDto, Currency } from '../../types';
+import { CreateEventDto, Currency, EventType } from '../../types';
 import Screen from '../../components/ui/Screen';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -138,6 +138,7 @@ export default function CreateEventScreen({ navigation, route }: any) {
     currency: Currency.ARS,
     notes: '',
     clientId: undefined,
+    eventType: EventType.SALON,
   });
 
   const queryClient = useQueryClient();
@@ -147,8 +148,8 @@ export default function CreateEventScreen({ navigation, route }: any) {
     enabled: !!eventId,
   });
   const { data: availability, isLoading: isCheckingAvailability } = useQuery({
-    queryKey: ['event-availability', formData.date, eventId],
-    queryFn: () => eventService.checkAvailability(formData.date, eventId),
+    queryKey: ['event-availability', formData.date, eventId, formData.eventType],
+    queryFn: () => eventService.checkAvailability(formData.date, eventId, formData.eventType),
     enabled: Boolean(formData.date),
     staleTime: 60 * 1000,
   });
@@ -207,6 +208,7 @@ export default function CreateEventScreen({ navigation, route }: any) {
         currency: event.currency,
         notes: event.notes || '',
         clientId: event.clientId,
+        eventType: event.eventType || EventType.SALON,
       };
       setFormData(mapped);
     }
@@ -306,14 +308,6 @@ export default function CreateEventScreen({ navigation, route }: any) {
       Alert.alert('Error', 'Hora de fin invalida');
       return;
     }
-    if (availability?.status === 'ok' && !availability.available) {
-      Alert.alert(
-        'Fecha no disponible',
-        'Ya hay eventos en esa fecha. Elige otra.',
-      );
-      return;
-    }
-
     if (
       !Number.isFinite(totalGuests) ||
       !Number.isFinite(contractedPlates) ||
@@ -338,11 +332,28 @@ export default function CreateEventScreen({ navigation, route }: any) {
       return;
     }
 
+    if (availability?.status === 'ok' && !availability.available) {
+      Alert.alert(
+        'Fecha con eventos',
+        `Ya hay ${availability.busyCount || 1} evento(s) en esa fecha. ¿Deseas continuar de todas formas?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Continuar', onPress: () => saveEvent() },
+        ],
+      );
+      return;
+    }
+
+    saveEvent();
+  };
+
+  const saveEvent = async () => {
     const payload: CreateEventDto = {
       ...formData,
       guestCount: contractedPlates,
       dishCount: contractedPlates,
       pricePerDish: 0,
+      eventType: EventType.SALON,
       menuDescription: formData.menuDescription?.trim() || undefined,
       eventHours: formData.eventHours?.trim() || undefined,
       receptionType: formData.receptionType?.trim() || undefined,
@@ -510,12 +521,12 @@ export default function CreateEventScreen({ navigation, route }: any) {
                     className={`text-xs font-semibold ${
                       availability.available
                         ? 'text-emerald-400'
-                        : 'text-rose-400'
+                        : 'text-amber-400'
                     }`}
                   >
                     {availability.available
                       ? 'Fecha disponible'
-                      : 'Fecha ocupada'}
+                      : `Esta fecha tiene ${availability.busyCount || 1} evento(s)`}
                   </Text>
                 ) : (
                   <Text className="text-xs text-slate-400">
@@ -849,12 +860,10 @@ export default function CreateEventScreen({ navigation, route }: any) {
               <DateTimePicker
                 value={parseLocalDate(formData.date)}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display="default"
                 {...pickerStyleProps}
                 onChange={(event, selectedDate) => {
-                  if (Platform.OS !== 'ios') {
-                    setShowDatePicker(false);
-                  }
+                  setShowDatePicker(false);
                   if (event.type === 'set' && selectedDate) {
                     setFormData((prev) => ({
                       ...prev,
@@ -880,12 +889,10 @@ export default function CreateEventScreen({ navigation, route }: any) {
               <DateTimePicker
                 value={parseTimeValue(formData.startTime)}
                 mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display="default"
                 {...pickerStyleProps}
                 onChange={(event, selectedDate) => {
-                  if (Platform.OS !== 'ios') {
-                    setShowStartPicker(false);
-                  }
+                  setShowStartPicker(false);
                   if (event.type === 'set' && selectedDate) {
                     setFormData((prev) => ({
                       ...prev,
@@ -911,12 +918,10 @@ export default function CreateEventScreen({ navigation, route }: any) {
               <DateTimePicker
                 value={parseTimeValue(formData.endTime || formData.startTime)}
                 mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display="default"
                 {...pickerStyleProps}
                 onChange={(event, selectedDate) => {
-                  if (Platform.OS !== 'ios') {
-                    setShowEndPicker(false);
-                  }
+                  setShowEndPicker(false);
                   if (event.type === 'set' && selectedDate) {
                     setFormData((prev) => ({
                       ...prev,

@@ -9,14 +9,25 @@ import { UserRole } from '../../types';
 import Card from '../../components/ui/Card';
 import { dolarService } from '../../services/dolarService';
 
-const routesByRole: Record<UserRole, Array<{ key: string; label: string }>> = {
+type LandingRoute = {
+  key: string;
+  label: string;
+  /** Abre una pantalla del stack Eventos (CreateVisit / CreateFranco) */
+  eventsStackScreen?: 'CreateVisit' | 'CreateFranco';
+};
+
+const routesByRole: Record<UserRole, LandingRoute[]> = {
   [UserRole.ADMIN]: [
     { key: 'Events', label: 'Eventos' },
+    { key: 'Entrevista', label: 'Entrevista', eventsStackScreen: 'CreateVisit' },
+    { key: 'Franco', label: 'Franco', eventsStackScreen: 'CreateFranco' },
     { key: 'Clients', label: 'Clientes' },
     { key: 'Demonstrations', label: 'Demostraciones' },
   ],
   [UserRole.SUPERADMIN]: [
     { key: 'Events', label: 'Eventos' },
+    { key: 'Entrevista', label: 'Entrevista', eventsStackScreen: 'CreateVisit' },
+    { key: 'Franco', label: 'Franco', eventsStackScreen: 'CreateFranco' },
     { key: 'Clients', label: 'Clientes' },
     { key: 'Admin', label: 'Ingresos' },
     { key: 'Demonstrations', label: 'Demostraciones' },
@@ -25,9 +36,18 @@ const routesByRole: Record<UserRole, Array<{ key: string; label: string }>> = {
 
 const actionDescriptions: Record<string, string> = {
   Events: 'Crea y gestiona eventos',
+  Entrevista: 'Registra una entrevista con un cliente',
+  Franco: 'Registra un franco o dia libre',
   Clients: 'Administra tus clientes',
   Admin: 'Revisa ingresos totales',
   Demonstrations: 'Muestra los platos disponibles',
+};
+
+const goToEventsScreen = (navigation: any, screen: string) => {
+  navigation.navigate('MainTabs', {
+    screen: 'Events',
+    params: { screen },
+  });
 };
 
 export default function RoleLandingScreen({ navigation }: any) {
@@ -149,6 +169,10 @@ export default function RoleLandingScreen({ navigation }: any) {
                 onPress={() => {
                   if (item.key === 'Demonstrations') {
                     navigation.navigate('Demonstrations');
+                    return;
+                  }
+                  if (item.eventsStackScreen) {
+                    goToEventsScreen(navigation, item.eventsStackScreen);
                     return;
                   }
                   navigation.replace('MainTabs', { initialTab: item.key });

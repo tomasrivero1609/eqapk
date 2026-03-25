@@ -8,6 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import EventsListScreen from '../screens/events/EventsListScreen';
 import EventDetailScreen from '../screens/events/EventDetailScreen';
 import CreateEventScreen from '../screens/events/CreateEventScreen';
+import CreateVisitScreen from '../screens/events/CreateVisitScreen';
+import CreateFrancoScreen from '../screens/events/CreateFrancoScreen';
 import CreatePaymentScreen from '../screens/events/CreatePaymentScreen';
 import PaymentDetailScreen from '../screens/events/PaymentDetailScreen';
 import EventsCalendarScreen from '../screens/events/EventsCalendarScreen';
@@ -40,7 +42,7 @@ const getStackScreenOptions = (isCompact: boolean) => ({
     elevation: 3,
   },
   headerTitleStyle: {
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
     color: '#f1f5f9',
     fontSize: isCompact ? 18 : 20,
   },
@@ -61,6 +63,8 @@ function EventsStack({ isCompact }: { isCompact: boolean }) {
       <Stack.Screen name="EventDetail" component={EventDetailScreen} options={{ title: 'Detalle del evento' }} />
       <Stack.Screen name="EventSpecs" component={EventSpecsScreen} options={{ title: 'Especificaciones técnicas' }} />
       <Stack.Screen name="CreateEvent" component={CreateEventScreen} options={{ title: 'Nuevo evento' }} />
+      <Stack.Screen name="CreateVisit" component={CreateVisitScreen} options={{ title: 'Nueva entrevista' }} />
+      <Stack.Screen name="CreateFranco" component={CreateFrancoScreen} options={{ title: 'Nuevo franco' }} />
       <Stack.Screen name="CreatePayment" component={CreatePaymentScreen} options={{ title: 'Registrar pago' }} />
       <Stack.Screen name="PaymentDetail" component={PaymentDetailScreen} options={{ title: 'Detalle del pago' }} />
       <Stack.Screen name="SelectClient" component={SelectClientScreen} options={{ title: 'Seleccionar cliente' }} />
