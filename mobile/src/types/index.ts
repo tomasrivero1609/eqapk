@@ -156,6 +156,7 @@ export interface CreateEventDto {
   clientId?: string;
   eventType?: EventType;
   attendeeEmail?: string;
+  location?: string;
 }
 
 export interface CalendarAvailability {

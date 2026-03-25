@@ -46,7 +46,7 @@ export class EventsService {
     const quarterlyAdjustmentPercent =
       createEventDto.quarterlyAdjustmentPercent ?? 0;
 
-    const { attendeeEmail, ...eventData } = createEventDto;
+    const { attendeeEmail, location, ...eventData } = createEventDto;
 
     const event = await this.prisma.event.create({
       data: {
@@ -98,6 +98,7 @@ export class EventsService {
         startTime: event.startTime,
         endTime: event.endTime || undefined,
         attendeeEmail: attendeeEmail || undefined,
+        location: location || undefined,
       }, event.eventType);
 
       if (calendarEventId) {

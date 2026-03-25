@@ -204,4 +204,8 @@ export class CreateEventDto {
   @IsOptional()
   @IsString()
   attendeeEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
 }

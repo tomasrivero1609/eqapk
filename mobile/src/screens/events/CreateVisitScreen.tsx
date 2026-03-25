@@ -57,6 +57,7 @@ interface FormData {
   startTime: string;
   endTime: string;
   attendeeEmail: string;
+  location: string;
   notes: string;
 }
 
@@ -84,6 +85,7 @@ export default function CreateVisitScreen({ navigation }: any) {
     startTime: '',
     endTime: '',
     attendeeEmail: '',
+    location: '',
     notes: '',
   });
 
@@ -160,6 +162,7 @@ export default function CreateVisitScreen({ navigation }: any) {
       guestCount: 0,
       eventType: EventType.VISITA,
       attendeeEmail: formData.attendeeEmail?.trim() || undefined,
+      location: formData.location?.trim() || undefined,
       description: formData.description?.trim() || undefined,
       notes: formData.notes?.trim() || undefined,
     };
@@ -297,6 +300,13 @@ export default function CreateVisitScreen({ navigation }: any) {
             autoCapitalize="none"
             value={formData.attendeeEmail}
             onChangeText={(text) => setFormData({ ...formData, attendeeEmail: text })}
+          />
+
+          <Input
+            label="Dirección / Ubicación (opcional)"
+            placeholder="Ej: Av. Rivadavia 1234, Quilmes"
+            value={formData.location}
+            onChangeText={(text) => setFormData({ ...formData, location: text })}
           />
 
           <Input

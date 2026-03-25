@@ -10,6 +10,7 @@ interface CalendarEventInput {
   startTime: string;
   endTime?: string | null;
   attendeeEmail?: string;
+  location?: string;
 }
 
 export interface CalendarAvailabilityResult {
@@ -235,6 +236,10 @@ export class CalendarService {
         timeZone: timezone,
       },
     };
+
+    if (input.location) {
+      payload.location = input.location;
+    }
 
     if (input.attendeeEmail) {
       const existing = payload.description || '';
