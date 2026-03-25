@@ -42,17 +42,39 @@ export class AuthService {
         email: true,
         name: true,
         role: true,
+        permissions: true,
         createdAt: true,
       },
     });
 
     const token = this.generateToken(user.id, user.email);
 
+    const permissions =
+      user.role === 'SUPERADMIN'
+        ? this.ALL_PERMISSIONS
+        : (user.permissions as Record<string, string[]>) || {};
+
     return {
-      user,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        permissions,
+      },
       access_token: token,
     };
   }
+
+  private readonly ALL_PERMISSIONS = {
+    eventos: ['ver', 'crear', 'editar', 'eliminar'],
+    entrevistas: ['ver', 'crear', 'editar', 'eliminar'],
+    francos: ['ver', 'crear', 'editar', 'eliminar'],
+    clientes: ['ver', 'crear', 'editar', 'eliminar'],
+    ingresos: ['ver'],
+    demostraciones: ['ver'],
+    usuarios: ['ver', 'crear', 'editar', 'eliminar'],
+  };
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
@@ -73,12 +95,18 @@ export class AuthService {
 
     const token = this.generateToken(user.id, user.email);
 
+    const permissions =
+      user.role === 'SUPERADMIN'
+        ? this.ALL_PERMISSIONS
+        : (user.permissions as Record<string, string[]>) || {};
+
     return {
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
         role: user.role,
+        permissions,
       },
       access_token: token,
     };

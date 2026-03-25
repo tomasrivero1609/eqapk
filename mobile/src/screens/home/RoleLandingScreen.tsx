@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import Screen from '../../components/ui/Screen';
 import { useAuthStore } from '../../store/authStore';
-import { UserRole } from '../../types';
+import { UserRole, PermissionModule } from '../../types';
 import Card from '../../components/ui/Card';
 import { dolarService } from '../../services/dolarService';
 
@@ -17,25 +17,18 @@ type LandingRoute = {
   icon: string;
   screen: string;
   description: string;
+  permissionModule: PermissionModule;
 };
 
-const routesByRole: Record<UserRole, LandingRoute[]> = {
-  [UserRole.ADMIN]: [
-    { key: 'Events', label: 'Eventos', icon: 'calendar', screen: 'EventsList', description: 'Crea y gestiona eventos del salón' },
-    { key: 'Entrevistas', label: 'Entrevistas', icon: 'people', screen: 'EntrevistasList', description: 'Entrevistas programadas' },
-    { key: 'Francos', label: 'Francos', icon: 'sunny', screen: 'FrancosList', description: 'Días libres y francos' },
-    { key: 'Clients', label: 'Clientes', icon: 'person-circle', screen: 'ClientsList', description: 'Administra tus clientes' },
-    { key: 'Demonstrations', label: 'Demostraciones', icon: 'images', screen: 'Demonstrations', description: 'Galería de platos' },
-  ],
-  [UserRole.SUPERADMIN]: [
-    { key: 'Events', label: 'Eventos', icon: 'calendar', screen: 'EventsList', description: 'Crea y gestiona eventos del salón' },
-    { key: 'Entrevistas', label: 'Entrevistas', icon: 'people', screen: 'EntrevistasList', description: 'Entrevistas programadas' },
-    { key: 'Francos', label: 'Francos', icon: 'sunny', screen: 'FrancosList', description: 'Días libres y francos' },
-    { key: 'Clients', label: 'Clientes', icon: 'person-circle', screen: 'ClientsList', description: 'Administra tus clientes' },
-    { key: 'Admin', label: 'Ingresos', icon: 'stats-chart', screen: 'AdminSummary', description: 'Revisa ingresos totales' },
-    { key: 'Demonstrations', label: 'Demostraciones', icon: 'images', screen: 'Demonstrations', description: 'Galería de platos' },
-  ],
-};
+const ALL_ROUTES: LandingRoute[] = [
+  { key: 'Events', label: 'Eventos', icon: 'calendar', screen: 'EventsList', description: 'Crea y gestiona eventos del salón', permissionModule: 'eventos' },
+  { key: 'Entrevistas', label: 'Entrevistas', icon: 'people', screen: 'EntrevistasList', description: 'Entrevistas programadas', permissionModule: 'entrevistas' },
+  { key: 'Francos', label: 'Francos', icon: 'sunny', screen: 'FrancosList', description: 'Días libres y francos', permissionModule: 'francos' },
+  { key: 'Clients', label: 'Clientes', icon: 'person-circle', screen: 'ClientsList', description: 'Administra tus clientes', permissionModule: 'clientes' },
+  { key: 'Admin', label: 'Ingresos', icon: 'stats-chart', screen: 'AdminSummary', description: 'Revisa ingresos totales', permissionModule: 'ingresos' },
+  { key: 'Demonstrations', label: 'Demostraciones', icon: 'images', screen: 'Demonstrations', description: 'Galería de platos', permissionModule: 'demostraciones' },
+  { key: 'Users', label: 'Usuarios', icon: 'people-circle', screen: 'UsersManagement', description: 'Gestiona usuarios y permisos', permissionModule: 'usuarios' },
+];
 
 export default function RoleLandingScreen({ navigation }: any) {
   const { role, name } = useAuthStore((state) => ({
@@ -43,7 +36,11 @@ export default function RoleLandingScreen({ navigation }: any) {
     name: state.user?.name || 'Equipo',
   }));
   const logout = useAuthStore((state) => state.logout);
-  const actions = routesByRole[role];
+  const hasPermission = useAuthStore((state) => state.hasPermission);
+  const actions = useMemo(
+    () => ALL_ROUTES.filter((r) => hasPermission(r.permissionModule, 'ver')),
+    [hasPermission],
+  );
   const roleLabel = role === UserRole.SUPERADMIN ? 'Superadmin' : 'Admin';
   const { width } = useWindowDimensions();
   const isCompact = width < 400;

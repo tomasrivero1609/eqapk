@@ -9,12 +9,28 @@ import {
   UseGuards,
   Query,
   BadRequestException,
+  ForbiddenException,
+  Req,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { GetUser } from '../common/decorators/get-user.decorator';
+
+const EVENT_TYPE_MODULE_MAP: Record<string, string> = {
+  SALON: 'eventos',
+  VISITA: 'entrevistas',
+  FRANCO: 'francos',
+};
+
+function checkPermission(user: any, module: string, action: string) {
+  if (user.role === 'SUPERADMIN') return;
+  const perms = user.permissions?.[module];
+  if (!perms || !Array.isArray(perms) || !perms.includes(action)) {
+    throw new ForbiddenException('No tienes permiso para esta acción');
+  }
+}
 
 @Controller('events')
 @UseGuards(JwtAuthGuard)
@@ -23,6 +39,8 @@ export class EventsController {
 
   @Post()
   create(@GetUser() user: any, @Body() createEventDto: CreateEventDto) {
+    const mod = EVENT_TYPE_MODULE_MAP[createEventDto.eventType || 'SALON'] || 'eventos';
+    checkPermission(user, mod, 'crear');
     return this.eventsService.create(user.id, createEventDto);
   }
 
@@ -49,11 +67,14 @@ export class EventsController {
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
     @GetUser() user: any,
     @Body() updateEventDto: UpdateEventDto,
   ) {
+    const event = await this.eventsService.findOne(id, user.id);
+    const mod = EVENT_TYPE_MODULE_MAP[event.eventType || 'SALON'] || 'eventos';
+    checkPermission(user, mod, 'editar');
     return this.eventsService.update(id, user.id, updateEventDto);
   }
 
@@ -64,6 +85,7 @@ export class EventsController {
     @Body('apply') apply?: boolean,
     @Body('force') force?: boolean,
   ) {
+    checkPermission(user, 'eventos', 'editar');
     if (apply) {
       return this.eventsService.applyQuarterlyAdjustment(id, user.id, force);
     }
@@ -71,7 +93,10 @@ export class EventsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @GetUser() user: any) {
+  async remove(@Param('id') id: string, @GetUser() user: any) {
+    const event = await this.eventsService.findOne(id, user.id);
+    const mod = EVENT_TYPE_MODULE_MAP[event.eventType || 'SALON'] || 'eventos';
+    checkPermission(user, mod, 'eliminar');
     return this.eventsService.remove(id, user.id);
   }
 }

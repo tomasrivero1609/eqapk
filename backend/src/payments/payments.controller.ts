@@ -11,16 +11,16 @@ import {
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { Roles } from '../common/decorators/roles.decorator';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { UserRole } from '@prisma/client';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { RequirePermission } from '../common/decorators/permissions.decorator';
 
 @Controller('payments')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
   @Post()
+  @RequirePermission('eventos', 'crear')
   create(@Body() createPaymentDto: CreatePaymentDto) {
     return this.paymentsService.create(createPaymentDto);
   }
@@ -31,13 +31,13 @@ export class PaymentsController {
   }
 
   @Get('summary')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPERADMIN)
+  @RequirePermission('ingresos', 'ver')
   getSummary() {
     return this.paymentsService.getSummary();
   }
 
   @Delete(':id')
+  @RequirePermission('eventos', 'eliminar')
   remove(@Param('id') id: string) {
     return this.paymentsService.remove(id);
   }

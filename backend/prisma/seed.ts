@@ -13,6 +13,16 @@ const pool = new Pool({ connectionString: databaseUrl });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+const ALL_PERMISSIONS = {
+  eventos: ['ver', 'crear', 'editar', 'eliminar'],
+  entrevistas: ['ver', 'crear', 'editar', 'eliminar'],
+  francos: ['ver', 'crear', 'editar', 'eliminar'],
+  clientes: ['ver', 'crear', 'editar', 'eliminar'],
+  ingresos: ['ver'],
+  demostraciones: ['ver'],
+  usuarios: ['ver', 'crear', 'editar', 'eliminar'],
+};
+
 async function main() {
   const adminPassword = await bcrypt.hash('Admin123!', 10);
   const superPassword = await bcrypt.hash('Super123!', 10);
@@ -23,12 +33,14 @@ async function main() {
       name: 'Admin',
       role: UserRole.ADMIN,
       password: adminPassword,
+      permissions: ALL_PERMISSIONS,
     },
     create: {
       email: 'admin@eqapk.com',
       name: 'Admin',
       password: adminPassword,
       role: UserRole.ADMIN,
+      permissions: ALL_PERMISSIONS,
     },
   });
 
@@ -38,12 +50,14 @@ async function main() {
       name: 'Superadmin',
       role: UserRole.SUPERADMIN,
       password: superPassword,
+      permissions: ALL_PERMISSIONS,
     },
     create: {
       email: 'superadmin@eqapk.com',
       name: 'Superadmin',
       password: superPassword,
       role: UserRole.SUPERADMIN,
+      permissions: ALL_PERMISSIONS,
     },
   });
 
@@ -54,12 +68,14 @@ async function main() {
       name: 'Tomás Rivero',
       role: UserRole.SUPERADMIN,
       password: tomasPassword,
+      permissions: ALL_PERMISSIONS,
     },
     create: {
       email: 'tomasrivero1609@gmail.com',
       name: 'Tomás Rivero',
       password: tomasPassword,
       role: UserRole.SUPERADMIN,
+      permissions: ALL_PERMISSIONS,
     },
   });
 
@@ -70,12 +86,14 @@ async function main() {
       name: 'Belén Alvarez',
       role: UserRole.SUPERADMIN,
       password: belenPassword,
+      permissions: ALL_PERMISSIONS,
     },
     create: {
       email: 'belenalvarez638@gmail.com',
       name: 'Belén Alvarez',
       password: belenPassword,
       role: UserRole.SUPERADMIN,
+      permissions: ALL_PERMISSIONS,
     },
   });
 }

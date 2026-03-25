@@ -13,6 +13,7 @@ import { CalendarModule } from './calendar/calendar.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MailModule } from './mail/mail.module';
 import { DemonstrationsModule } from './demonstrations/demonstrations.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { DemonstrationsModule } from './demonstrations/demonstrations.module';
     PaymentsModule,
     MailModule,
     DemonstrationsModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

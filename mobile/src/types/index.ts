@@ -1,9 +1,15 @@
+// Permission Types
+export type PermissionAction = 'ver' | 'crear' | 'editar' | 'eliminar';
+export type PermissionModule = 'eventos' | 'entrevistas' | 'francos' | 'clientes' | 'ingresos' | 'demostraciones' | 'usuarios';
+export type UserPermissions = Partial<Record<PermissionModule, PermissionAction[]>>;
+
 // User Types
 export interface User {
   id: string;
   email: string;
   name: string;
   role?: UserRole;
+  permissions?: UserPermissions;
 }
 
 export interface AuthResponse {

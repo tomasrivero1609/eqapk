@@ -17,6 +17,7 @@ import { eventService } from '../../services/eventService';
 import { Event, EventType } from '../../types';
 import Screen from '../../components/ui/Screen';
 import EmptyState from '../../components/ui/EmptyState';
+import { useAuthStore } from '../../store/authStore';
 
 const toLocalDate = (dateStr: string): Date => {
   const d = dateStr.slice(0, 10);
@@ -62,6 +63,7 @@ type SectionItem =
   | { type: 'entrevista'; data: Event };
 
 export default function EntrevistasListScreen({ navigation }: any) {
+  const canCreate = useAuthStore((s) => s.hasPermission('entrevistas', 'crear'));
   const { data: allEvents, isLoading, refetch } = useQuery({
     queryKey: ['events'],
     queryFn: () => eventService.getAll(),
@@ -180,14 +182,16 @@ export default function EntrevistasListScreen({ navigation }: any) {
         ]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          <TouchableOpacity
-            style={styles.fab}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('CreateVisit')}
-          >
-            <Ionicons name="add" size={20} color="#fff" />
-            <Text style={styles.fabText}>Nueva entrevista</Text>
-          </TouchableOpacity>
+          canCreate ? (
+            <TouchableOpacity
+              style={styles.fab}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('CreateVisit')}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.fabText}>Nueva entrevista</Text>
+            </TouchableOpacity>
+          ) : null
         }
         ListEmptyComponent={
           <EmptyState

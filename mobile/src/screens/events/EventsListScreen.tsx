@@ -21,6 +21,7 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/format';
 import { formatLocalDate } from '../../utils/date';
+import { useAuthStore } from '../../store/authStore';
 
 const daysSince = (date: Date) => {
   const now = Date.now();
@@ -52,6 +53,7 @@ const statusVariant = (status: EventStatus) => {
 };
 
 export default function EventsListScreen({ navigation }: any) {
+  const canCreate = useAuthStore((s) => s.hasPermission('eventos', 'crear'));
   const { data: events, isLoading, refetch } = useQuery({
     queryKey: ['events'],
     queryFn: () => eventService.getAll(),
@@ -166,11 +168,13 @@ export default function EventsListScreen({ navigation }: any) {
       <View style={[styles.header, { paddingTop: isLandscape ? 24 : 16 }]}>
         {isCompact ? (
           <View style={styles.buttonsColumn}>
-            <Button
-              label="Nuevo evento"
-              iconName="add-circle-outline"
-              onPress={() => navigation.navigate('CreateEvent')}
-            />
+            {canCreate && (
+              <Button
+                label="Nuevo evento"
+                iconName="add-circle-outline"
+                onPress={() => navigation.navigate('CreateEvent')}
+              />
+            )}
             <Button
               label="Calendario"
               variant="secondary"
@@ -180,13 +184,15 @@ export default function EventsListScreen({ navigation }: any) {
           </View>
         ) : (
           <View style={styles.buttonsRow}>
-            <View style={styles.buttonWrapper}>
-              <Button
-                label="Nuevo evento"
-                iconName="add-circle-outline"
-                onPress={() => navigation.navigate('CreateEvent')}
-              />
-            </View>
+            {canCreate && (
+              <View style={styles.buttonWrapper}>
+                <Button
+                  label="Nuevo evento"
+                  iconName="add-circle-outline"
+                  onPress={() => navigation.navigate('CreateEvent')}
+                />
+              </View>
+            )}
             <View style={styles.buttonWrapper}>
               <Button
                 label="Calendario"

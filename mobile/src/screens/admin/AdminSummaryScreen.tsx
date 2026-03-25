@@ -7,7 +7,7 @@ import { eventService } from '../../services/eventService';
 import Screen from '../../components/ui/Screen';
 import Card from '../../components/ui/Card';
 import { formatCurrency } from '../../utils/format';
-import { Currency, Event } from '../../types';
+import { Currency, Event, EventType } from '../../types';
 
 const daysSince = (date: Date) => {
   const now = Date.now();
@@ -39,26 +39,30 @@ export default function AdminSummaryScreen() {
   const ars = data?.[Currency.ARS] ?? 0;
   const usd = data?.[Currency.USD] ?? 0;
   const now = new Date();
+  const salonEvents = useMemo(
+    () => (events || []).filter((e: Event) => e.eventType === EventType.SALON),
+    [events],
+  );
   const monthEvents = useMemo(() => {
-    return (events || []).filter((event: Event) => {
+    return salonEvents.filter((event: Event) => {
       const date = new Date(event.date);
       return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
     });
-  }, [events, now]);
+  }, [salonEvents, now]);
   const upcomingEvents = useMemo(() => {
-    return (events || []).filter((event: Event) => {
+    return salonEvents.filter((event: Event) => {
       const date = new Date(event.date);
       const diff = date.getTime() - now.getTime();
       return diff >= 0 && diff <= 7 * 24 * 60 * 60 * 1000;
     });
-  }, [events, now]);
+  }, [salonEvents, now]);
   const overdueEvents = useMemo(() => {
-    return (events || []).filter((event: Event) => {
+    return salonEvents.filter((event: Event) => {
       const lastPayment = getLastPaymentDate(event.payments);
       const referenceDate = lastPayment || new Date(event.createdAt);
       return daysSince(referenceDate) >= 30;
     });
-  }, [events]);
+  }, [salonEvents]);
 
   if (isLoading || isLoadingEvents) {
     return (

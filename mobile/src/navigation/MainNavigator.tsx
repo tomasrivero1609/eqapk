@@ -19,6 +19,8 @@ import CreateClientScreen from '../screens/clients/CreateClientScreen';
 import SelectClientScreen from '../screens/clients/SelectClientScreen';
 import ClientDetailScreen from '../screens/clients/ClientDetailScreen';
 import AdminSummaryScreen from '../screens/admin/AdminSummaryScreen';
+import UsersManagementScreen from '../screens/admin/UsersManagementScreen';
+import UserEditScreen from '../screens/admin/UserEditScreen';
 import HomeButton from '../components/ui/HomeButton';
 
 const Stack = createNativeStackNavigator();
@@ -64,6 +66,7 @@ export default function MainNavigator({ route }: any) {
       <Stack.Screen name="FrancosList" component={FrancosListScreen} options={{ title: 'Francos', headerLeft: () => <HomeButton /> }} />
       <Stack.Screen name="ClientsList" component={ClientsListScreen} options={{ title: 'Clientes', headerLeft: () => <HomeButton /> }} />
       <Stack.Screen name="AdminSummary" component={AdminSummaryScreen} options={{ title: 'Ingresos', headerLeft: () => <HomeButton /> }} />
+      <Stack.Screen name="UsersManagement" component={UsersManagementScreen} options={{ title: 'Usuarios', headerLeft: () => <HomeButton /> }} />
 
       {/* Sub-pantallas con back nativo */}
       <Stack.Screen name="EventsCalendar" component={EventsCalendarScreen} options={{ title: 'Calendario' }} />
@@ -79,6 +82,7 @@ export default function MainNavigator({ route }: any) {
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ title: 'Detalle del cliente' }} />
       <Stack.Screen name="CreateClient" component={CreateClientScreen} options={{ title: 'Nuevo cliente' }} />
       <Stack.Screen name="SelectClient" component={SelectClientScreen} options={{ title: 'Seleccionar cliente' }} />
+      <Stack.Screen name="UserEdit" component={UserEditScreen} options={{ title: 'Editar usuario' }} />
     </Stack.Navigator>
   );
 }

@@ -16,6 +16,7 @@ import { eventService } from '../../services/eventService';
 import { Event, EventType } from '../../types';
 import Screen from '../../components/ui/Screen';
 import EmptyState from '../../components/ui/EmptyState';
+import { useAuthStore } from '../../store/authStore';
 
 const toLocalDate = (dateStr: string): Date => {
   const d = dateStr.slice(0, 10);
@@ -56,6 +57,7 @@ type ListItem =
   | { type: 'franco'; data: Event; isLast: boolean };
 
 export default function FrancosListScreen({ navigation }: any) {
+  const canCreate = useAuthStore((s) => s.hasPermission('francos', 'crear'));
   const { data: allEvents, isLoading, refetch } = useQuery({
     queryKey: ['events'],
     queryFn: () => eventService.getAll(),
@@ -176,14 +178,16 @@ export default function FrancosListScreen({ navigation }: any) {
         ]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
-          <TouchableOpacity
-            style={styles.fab}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('CreateFranco')}
-          >
-            <Ionicons name="add" size={20} color="#fff" />
-            <Text style={styles.fabText}>Nuevo franco</Text>
-          </TouchableOpacity>
+          canCreate ? (
+            <TouchableOpacity
+              style={styles.fab}
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('CreateFranco')}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.fabText}>Nuevo franco</Text>
+            </TouchableOpacity>
+          ) : null
         }
         ListEmptyComponent={
           <EmptyState
