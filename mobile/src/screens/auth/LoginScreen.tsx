@@ -76,15 +76,6 @@ export default function LoginScreen({ navigation }: any) {
             className="mt-4"
           />
 
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Register')}
-            className="mt-6"
-          >
-            <Text className="text-violet-300 text-center text-base font-medium">
-              No tienes cuenta?{' '}
-              <Text className="font-bold">Registrate aqui</Text>
-            </Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
