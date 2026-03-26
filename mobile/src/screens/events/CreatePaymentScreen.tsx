@@ -24,7 +24,16 @@ const parseLocalDate = (value: string) => {
 };
 
 const normalizeDecimalInput = (value: string) => {
-  const cleaned = value.replace(',', '.').replace(/[^0-9.]/g, '');
+  const hasComma = value.includes(',');
+  let cleaned: string;
+  if (hasComma) {
+    cleaned = value
+      .replace(/\./g, '')
+      .replace(',', '.')
+      .replace(/[^0-9.]/g, '');
+  } else {
+    cleaned = value.replace(/[^0-9.]/g, '');
+  }
   const parts = cleaned.split('.');
   if (parts.length <= 1) {
     return cleaned.replace(/^0+(?=\d)/, '');
@@ -51,6 +60,16 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
   const [notes, setNotes] = useState('');
   const [paidAt, setPaidAt] = useState('');
   const [showPaidAtPicker, setShowPaidAtPicker] = useState(false);
+
+  const [customRate, setCustomRate] = useState('');
+
+  const [discountEnabled, setDiscountEnabled] = useState(false);
+
+  const [showComplement, setShowComplement] = useState(false);
+  const [complementAmount, setComplementAmount] = useState('0');
+  const [complementCurrency, setComplementCurrency] = useState<Currency>(currency);
+  const [complementMethod, setComplementMethod] = useState(paymentMethods[1]);
+  const [complementNotes, setComplementNotes] = useState('');
   const isAnyPickerOpen = showPaidAtPicker;
   const pickerStyleProps =
     Platform.OS === 'ios'
@@ -80,7 +99,9 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
     queryFn: () => dolarService.getBlue(),
     staleTime: 5 * 60 * 1000,
   });
-  const exchangeRate = dolarBlue?.venta;
+  const blueRate = dolarBlue?.venta;
+  const parsedCustomRate = parseFloat(customRate) || 0;
+  const exchangeRate = parsedCustomRate > 0 ? parsedCustomRate : blueRate;
   const sectionData = useMemo(() => {
     if (!event) {
       return {
@@ -132,7 +153,19 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
     () => convertAmount(parsedAmount, paymentCurrency, currency, exchangeRate),
     [parsedAmount, paymentCurrency, currency, exchangeRate],
   );
-  const coveredCostEventCurrency = useMemo(() => {
+  const isFirstPayment = (event?.payments || []).length === 0;
+  const coversAllPlates = useMemo(() => {
+    return (
+      parsedAdultCovered === sectionData.adultCount &&
+      parsedJuvenileCovered === sectionData.juvenileCount &&
+      parsedChildCovered === sectionData.childCount &&
+      (parsedAdultCovered + parsedJuvenileCovered + parsedChildCovered) > 0
+    );
+  }, [parsedAdultCovered, parsedJuvenileCovered, parsedChildCovered, sectionData]);
+  const canApplyDiscount = isFirstPayment && coversAllPlates;
+  const discountMultiplier = canApplyDiscount && discountEnabled ? 0.9 : 1;
+
+  const coveredCostEventCurrencyRaw = useMemo(() => {
     return (
       parsedAdultCovered * sectionData.adultPrice +
       parsedJuvenileCovered * sectionData.juvenilePrice +
@@ -146,6 +179,7 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
     sectionData.juvenilePrice,
     sectionData.childPrice,
   ]);
+  const coveredCostEventCurrency = coveredCostEventCurrencyRaw * discountMultiplier;
   const coveredCostPaymentCurrency = useMemo(() => {
     return convertAmount(
       coveredCostEventCurrency,
@@ -162,31 +196,42 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
   ]);
   const adultCostPaymentCurrency = useMemo(() => {
     return convertAmount(
-      parsedAdultCovered * sectionData.adultPrice,
+      parsedAdultCovered * sectionData.adultPrice * discountMultiplier,
       event?.currency || currency,
       paymentCurrency,
       exchangeRate,
     );
-  }, [parsedAdultCovered, sectionData.adultPrice, event, currency, paymentCurrency, exchangeRate]);
+  }, [parsedAdultCovered, sectionData.adultPrice, discountMultiplier, event, currency, paymentCurrency, exchangeRate]);
   const juvenileCostPaymentCurrency = useMemo(() => {
     return convertAmount(
-      parsedJuvenileCovered * sectionData.juvenilePrice,
+      parsedJuvenileCovered * sectionData.juvenilePrice * discountMultiplier,
       event?.currency || currency,
       paymentCurrency,
       exchangeRate,
     );
-  }, [parsedJuvenileCovered, sectionData.juvenilePrice, event, currency, paymentCurrency, exchangeRate]);
+  }, [parsedJuvenileCovered, sectionData.juvenilePrice, discountMultiplier, event, currency, paymentCurrency, exchangeRate]);
   const childCostPaymentCurrency = useMemo(() => {
     return convertAmount(
-      parsedChildCovered * sectionData.childPrice,
+      parsedChildCovered * sectionData.childPrice * discountMultiplier,
       event?.currency || currency,
       paymentCurrency,
       exchangeRate,
     );
-  }, [parsedChildCovered, sectionData.childPrice, event, currency, paymentCurrency, exchangeRate]);
+  }, [parsedChildCovered, sectionData.childPrice, discountMultiplier, event, currency, paymentCurrency, exchangeRate]);
   const paymentRemaining = useMemo(() => {
     return parsedAmount - coveredCostPaymentCurrency;
   }, [parsedAmount, coveredCostPaymentCurrency]);
+  const shortfallEventCurrency = useMemo(() => {
+    if (paymentRemaining >= -0.01) return 0;
+    return Math.abs(
+      convertAmount(
+        paymentRemaining,
+        paymentCurrency,
+        event?.currency || currency,
+        exchangeRate,
+      ),
+    );
+  }, [paymentRemaining, paymentCurrency, event, currency, exchangeRate]);
   const totalPaidInEventCurrency = useMemo(() => {
     if (!event) {
       return 0;
@@ -233,6 +278,21 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
       { adultCovered: 0, juvenileCovered: 0, childCovered: 0, coveredValue: 0 },
     );
   }, [event, sectionData]);
+
+  const existingDiscount = useMemo(() => {
+    if (!event) return 0;
+    return (event.payments || []).reduce((sum: number, p: any) => {
+      if (!p.discountPercent || p.discountPercent <= 0) return sum;
+      const adult = p.adultCovered || 0;
+      const juvenile = p.juvenileCovered || 0;
+      const child = p.childCovered || 0;
+      const ap = p.adultPriceAtPayment ?? sectionData.adultPrice;
+      const jp = p.juvenilePriceAtPayment ?? sectionData.juvenilePrice;
+      const cp = p.childPriceAtPayment ?? sectionData.childPrice;
+      return sum + (adult * ap + juvenile * jp + child * cp) * (p.discountPercent / 100);
+    }, 0);
+  }, [event, sectionData]);
+
   const totalDue = useMemo(() => {
     if (!event) {
       return 0;
@@ -253,9 +313,10 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
       coveredTotals.coveredValue +
       remainingAdult * sectionData.adultPrice +
       remainingJuvenile * sectionData.juvenilePrice +
-      remainingChild * sectionData.childPrice
+      remainingChild * sectionData.childPrice -
+      existingDiscount
     );
-  }, [event, coveredTotals, sectionData]);
+  }, [event, coveredTotals, sectionData, existingDiscount]);
   const newPaymentInEventCurrency = useMemo(() => {
     if (!event) {
       return parsedAmount;
@@ -267,9 +328,38 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
       exchangeRate,
     );
   }, [event, parsedAmount, paymentCurrency, exchangeRate]);
+  const parsedComplementAmount = parseFloat(complementAmount) || 0;
+  const complementInEventCurrency = useMemo(() => {
+    return convertAmount(
+      parsedComplementAmount,
+      complementCurrency,
+      event?.currency || currency,
+      exchangeRate,
+    );
+  }, [parsedComplementAmount, complementCurrency, event, currency, exchangeRate]);
+
   const mutation = useMutation({
-    mutationFn: () =>
-      paymentService.create({
+    mutationFn: () => {
+      const compExchangeDate =
+        complementCurrency !== currency && exchangeRate
+          ? (paidAt ? new Date(paidAt).toISOString() : new Date().toISOString())
+          : undefined;
+      const complementPayload =
+        showComplement && parsedComplementAmount > 0
+          ? {
+              amount: parsedComplementAmount,
+              currency: complementCurrency,
+              exchangeRate:
+                complementCurrency !== currency && exchangeRate
+                  ? exchangeRate
+                  : undefined,
+              exchangeRateDate: compExchangeDate,
+              method: complementMethod,
+              notes: complementNotes || 'Complemento de pago',
+            }
+          : undefined;
+
+      return paymentService.create({
         eventId,
         amount: parseFloat(amount),
         currency: paymentCurrency,
@@ -285,10 +375,16 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
         method,
         notes: notes || undefined,
         paidAt: paidAt || undefined,
-      }),
+        discountPercent: canApplyDiscount && discountEnabled ? 10 : undefined,
+        complement: complementPayload,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
-      Alert.alert('Listo', 'Pago registrado', [
+      const msg = showComplement && parsedComplementAmount > 0
+        ? 'Pago compuesto registrado'
+        : 'Pago registrado';
+      Alert.alert('Listo', msg, [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     },
@@ -300,6 +396,10 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
   const handleSubmit = () => {
     if (!parsedAmount || parsedAmount <= 0) {
       Alert.alert('Error', 'Ingresa un monto valido');
+      return;
+    }
+    if (showComplement && parsedComplementAmount <= 0) {
+      Alert.alert('Error', 'Ingresa un monto valido para el complemento');
       return;
     }
     if (parsedAdultCovered < 0 || parsedJuvenileCovered < 0 || parsedChildCovered < 0) {
@@ -319,22 +419,33 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
         return;
       }
       if (hasCoveredSections) {
-        if (paymentRemaining > 0.01) {
+        const isCrossCurrency =
+          paymentCurrency !== event.currency ||
+          (showComplement && complementCurrency !== event.currency);
+        const plateTolerance = isCrossCurrency ? 1 : 0.01;
+
+        const totalPaymentInEventCurrency =
+          newPaymentInEventCurrency +
+          (showComplement ? complementInEventCurrency : 0);
+        const effectiveRemaining =
+          totalPaymentInEventCurrency - coveredCostEventCurrency;
+
+        if (effectiveRemaining > plateTolerance) {
           Alert.alert(
             'Saldo sobrante',
-            `El pago excede el costo de los platos cargados. Te sobran ${formatCurrency(
-              paymentRemaining,
-              paymentCurrency,
+            `El pago excede el costo de los platos cargados. Sobran ${formatCurrency(
+              effectiveRemaining,
+              event.currency,
             )}.`,
           );
           return;
         }
-        if (paymentRemaining < -0.01) {
+        if (effectiveRemaining < -plateTolerance) {
           Alert.alert(
             'Saldo pendiente',
             `El pago no alcanza para cubrir los platos cargados. Falta ${formatCurrency(
-              Math.abs(paymentRemaining),
-              paymentCurrency,
+              Math.abs(effectiveRemaining),
+              event.currency,
             )}.`,
           );
           return;
@@ -365,8 +476,24 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
       const canCompare =
         paymentCurrency === event.currency || Boolean(exchangeRate);
       if (canCompare) {
-        const totalAfter = totalPaidInEventCurrency + newPaymentInEventCurrency;
-        if (totalAfter > totalDue + 0.005) {
+        const compInEvent = showComplement ? complementInEventCurrency : 0;
+        const totalAfter =
+          totalPaidInEventCurrency + newPaymentInEventCurrency + compInEvent;
+        const currentDiscount =
+          canApplyDiscount && discountEnabled
+            ? coveredCostEventCurrencyRaw * 0.1
+            : 0;
+        const effectiveTotalDue = totalDue - currentDiscount;
+        const hasCrossPayments =
+          paymentCurrency !== event.currency ||
+          (showComplement && complementCurrency !== event.currency) ||
+          (event.payments || []).some(
+            (p: any) => p.currency !== event.currency,
+          );
+        const exceedTolerance = hasCrossPayments
+          ? Math.max(1, effectiveTotalDue * 0.001)
+          : 0.01;
+        if (totalAfter > effectiveTotalDue + exceedTolerance) {
           Alert.alert(
             'Monto excedido',
             'Este pago excede el total del evento.',
@@ -439,6 +566,40 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
               </Text>
             )}
           </Card>
+          {paymentCurrency !== currency && (
+            <Card>
+              <Text className="text-xs font-semibold text-slate-400">
+                Dolar pactado
+              </Text>
+              <Text className="mt-1 text-xs text-slate-500">
+                Si acordaron un tipo de cambio distinto al blue, ingresalo aca.
+              </Text>
+              <View className="mt-2">
+                <Input
+                  label="Tipo de cambio"
+                  placeholder={blueRate ? String(blueRate) : '1415'}
+                  value={customRate}
+                  onChangeText={(text) => setCustomRate(normalizeDecimalInput(text))}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              {parsedCustomRate > 0 && (
+                <View className="mt-2 flex-row items-center justify-between">
+                  <Text className="text-xs text-emerald-300">
+                    Usando ${parsedCustomRate} pactado
+                  </Text>
+                  <TouchableOpacity onPress={() => setCustomRate('')}>
+                    <Text className="text-xs text-slate-500">Usar blue</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              {parsedCustomRate === 0 && blueRate && (
+                <Text className="mt-2 text-xs text-slate-500">
+                  Usando blue automatico: ${blueRate}
+                </Text>
+              )}
+            </Card>
+          )}
         </View>
 
         <View className="mt-6 px-6 space-y-4">
@@ -497,12 +658,61 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
               </View>
             </View>
           </Card>
+          {canApplyDiscount && (
+            <Card className="border-emerald-500/30">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-1">
+                  <Text className="text-sm font-semibold text-emerald-300">
+                    Descuento 10% por pago total
+                  </Text>
+                  <Text className="mt-1 text-xs text-slate-400">
+                    Primer pago cubriendo todos los platos
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setDiscountEnabled(!discountEnabled)}
+                  className={`rounded-full border px-4 py-2 ${
+                    discountEnabled
+                      ? 'border-emerald-400 bg-emerald-500/20'
+                      : 'border-slate-600 bg-slate-800'
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-semibold ${
+                      discountEnabled ? 'text-emerald-300' : 'text-slate-400'
+                    }`}
+                  >
+                    {discountEnabled ? 'Aplicado' : 'Aplicar'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {discountEnabled && (
+                <View className="mt-3 rounded-xl bg-emerald-500/10 px-3 py-2">
+                  <Text className="text-xs text-slate-400">
+                    Total sin descuento: {formatCurrency(
+                      convertAmount(coveredCostEventCurrencyRaw, event?.currency || currency, paymentCurrency, exchangeRate),
+                      paymentCurrency,
+                    )}
+                  </Text>
+                  <Text className="text-sm font-semibold text-emerald-200">
+                    Total con 10% off: {formatCurrency(coveredCostPaymentCurrency, paymentCurrency)}
+                  </Text>
+                  <Text className="text-xs text-emerald-400">
+                    Ahorro: {formatCurrency(
+                      convertAmount(coveredCostEventCurrencyRaw * 0.1, event?.currency || currency, paymentCurrency, exchangeRate),
+                      paymentCurrency,
+                    )}
+                  </Text>
+                </View>
+              )}
+            </Card>
+          )}
           {(parsedAdultCovered > 0 ||
             parsedJuvenileCovered > 0 ||
             parsedChildCovered > 0) && (
             <Card>
               <Text className="text-xs font-semibold text-slate-400">
-                Costo de platos ({paymentCurrency})
+                Costo de platos ({paymentCurrency}){discountEnabled ? ' — con 10% dto.' : ''}
               </Text>
               <View className="mt-2 space-y-1">
                 <Text className="text-xs text-slate-300">
@@ -531,9 +741,119 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
               </Text>
               {paymentCurrency !== currency && (
                 <Text className="mt-1 text-xs text-slate-500">
-                  Calculado con dolar blue {exchangeRate ?? 'N/D'}.
+                  Calculado con {parsedCustomRate > 0 ? `dolar pactado ${parsedCustomRate}` : `dolar blue ${blueRate ?? 'N/D'}`}.
                 </Text>
               )}
+              {paymentRemaining < -1 && !showComplement && (
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowComplement(true);
+                    const otherCurrency =
+                      paymentCurrency === Currency.USD ? Currency.ARS : Currency.USD;
+                    setComplementCurrency(otherCurrency);
+                    const shortfall = Math.abs(paymentRemaining);
+                    const inOther = convertAmount(
+                      shortfall,
+                      paymentCurrency,
+                      otherCurrency,
+                      exchangeRate,
+                    );
+                    setComplementAmount(String(Math.ceil(inOther * 100) / 100));
+                  }}
+                  className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3"
+                >
+                  <Text className="text-center text-sm font-semibold text-amber-300">
+                    + Agregar complemento en {paymentCurrency === Currency.USD ? 'ARS' : 'USD'}
+                  </Text>
+                  <Text className="mt-1 text-center text-xs text-amber-400/70">
+                    Faltante: {formatCurrency(shortfallEventCurrency, event?.currency || currency)}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </Card>
+          )}
+          {showComplement && (
+            <Card>
+              <View className="flex-row items-center justify-between">
+                <Text className="text-sm font-semibold text-amber-300">
+                  Pago complementario
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowComplement(false);
+                    setComplementAmount('0');
+                  }}
+                >
+                  <Text className="text-xs text-rose-400">Quitar</Text>
+                </TouchableOpacity>
+              </View>
+              <View className="mt-3">
+                <Input
+                  label={`Monto (${complementCurrency})`}
+                  placeholder="0.00"
+                  value={complementAmount}
+                  onChangeText={(text) => setComplementAmount(normalizeDecimalInput(text))}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View className="mt-3">
+                <Text className="text-xs font-semibold text-slate-400 mb-2">
+                  Moneda del complemento
+                </Text>
+                <View className="flex-row gap-2">
+                  {[Currency.ARS, Currency.USD].map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      onPress={() => setComplementCurrency(item)}
+                      className={`flex-1 rounded-xl border px-3 py-3 ${
+                        complementCurrency === item
+                          ? 'border-amber-400 bg-amber-500/20'
+                          : 'border-slate-700 bg-slate-900'
+                      }`}
+                    >
+                      <Text
+                        className={`text-center text-xs font-semibold ${
+                          complementCurrency === item ? 'text-amber-200' : 'text-slate-300'
+                        }`}
+                      >
+                        {item === Currency.ARS ? 'ARS' : 'USD'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              <View className="mt-3">
+                <Text className="text-xs font-semibold text-slate-400 mb-2">
+                  Metodo del complemento
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {paymentMethods.map((item) => (
+                    <TouchableOpacity
+                      key={item}
+                      onPress={() => setComplementMethod(item)}
+                      className={`rounded-full border px-3 py-2 ${
+                        complementMethod === item
+                          ? 'border-amber-400 bg-amber-500/20'
+                          : 'border-slate-700 bg-slate-900'
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs font-semibold ${
+                          complementMethod === item ? 'text-amber-200' : 'text-slate-300'
+                        }`}
+                      >
+                        {item}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              <Input
+                label="Notas del complemento"
+                placeholder="Detalle del complemento"
+                value={complementNotes}
+                onChangeText={setComplementNotes}
+              />
             </Card>
           )}
           <View>
@@ -567,15 +887,20 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
                   Equivalente en {currency}
                 </Text>
                 {exchangeRate ? (
-                  <Text className="mt-1 text-sm text-slate-100">
-                    {formatCurrency(
-                      Number.isFinite(convertedAmount) ? convertedAmount : 0,
-                      currency,
-                    )}
-                  </Text>
+                  <>
+                    <Text className="mt-1 text-sm text-slate-100">
+                      {formatCurrency(
+                        Number.isFinite(convertedAmount) ? convertedAmount : 0,
+                        currency,
+                      )}
+                    </Text>
+                    <Text className="mt-1 text-xs text-slate-500">
+                      TC: {parsedCustomRate > 0 ? `$${parsedCustomRate} pactado` : `$${blueRate} blue`}
+                    </Text>
+                  </>
                 ) : (
                   <Text className="mt-1 text-xs text-slate-500">
-                    Sin tipo de cambio blue disponible.
+                    Sin tipo de cambio disponible.
                   </Text>
                 )}
               </View>
@@ -636,7 +961,7 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
 
         <View className="mt-6 px-6">
           <Button
-            label="Guardar pago"
+            label={showComplement ? 'Guardar pago compuesto' : 'Guardar pago'}
             onPress={handleSubmit}
             loading={mutation.isPending}
           />

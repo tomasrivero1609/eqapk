@@ -21,6 +21,9 @@ import ClientDetailScreen from '../screens/clients/ClientDetailScreen';
 import AdminSummaryScreen from '../screens/admin/AdminSummaryScreen';
 import UsersManagementScreen from '../screens/admin/UsersManagementScreen';
 import UserEditScreen from '../screens/admin/UserEditScreen';
+import InventoryListScreen from '../screens/inventory/InventoryListScreen';
+import InventoryItemDetailScreen from '../screens/inventory/InventoryItemDetailScreen';
+import CreateInventoryItemScreen from '../screens/inventory/CreateInventoryItemScreen';
 import HomeButton from '../components/ui/HomeButton';
 
 const Stack = createNativeStackNavigator();
@@ -67,6 +70,7 @@ export default function MainNavigator({ route }: any) {
       <Stack.Screen name="ClientsList" component={ClientsListScreen} options={{ title: 'Clientes', headerLeft: () => <HomeButton /> }} />
       <Stack.Screen name="AdminSummary" component={AdminSummaryScreen} options={{ title: 'Ingresos', headerLeft: () => <HomeButton /> }} />
       <Stack.Screen name="UsersManagement" component={UsersManagementScreen} options={{ title: 'Usuarios', headerLeft: () => <HomeButton /> }} />
+      <Stack.Screen name="InventoryList" component={InventoryListScreen} options={{ title: 'Inventario', headerLeft: () => <HomeButton /> }} />
 
       {/* Sub-pantallas con back nativo */}
       <Stack.Screen name="EventsCalendar" component={EventsCalendarScreen} options={{ title: 'Calendario' }} />
@@ -83,6 +87,8 @@ export default function MainNavigator({ route }: any) {
       <Stack.Screen name="CreateClient" component={CreateClientScreen} options={{ title: 'Nuevo cliente' }} />
       <Stack.Screen name="SelectClient" component={SelectClientScreen} options={{ title: 'Seleccionar cliente' }} />
       <Stack.Screen name="UserEdit" component={UserEditScreen} options={{ title: 'Editar usuario' }} />
+      <Stack.Screen name="InventoryItemDetail" component={InventoryItemDetailScreen} options={{ title: 'Detalle item' }} />
+      <Stack.Screen name="CreateInventoryItem" component={CreateInventoryItemScreen} options={{ title: 'Nuevo item' }} />
     </Stack.Navigator>
   );
 }

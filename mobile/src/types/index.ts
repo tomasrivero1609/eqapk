@@ -1,6 +1,6 @@
 // Permission Types
 export type PermissionAction = 'ver' | 'crear' | 'editar' | 'eliminar';
-export type PermissionModule = 'eventos' | 'entrevistas' | 'francos' | 'clientes' | 'ingresos' | 'demostraciones' | 'usuarios';
+export type PermissionModule = 'eventos' | 'entrevistas' | 'francos' | 'clientes' | 'ingresos' | 'demostraciones' | 'usuarios' | 'inventario';
 export type UserPermissions = Partial<Record<PermissionModule, PermissionAction[]>>;
 
 // User Types
@@ -304,9 +304,20 @@ export interface Payment {
   childPriceAtPayment?: number | null;
   method?: string;
   notes?: string;
+  groupId?: string | null;
+  discountPercent?: number | null;
   paidAt: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ComplementPaymentDto {
+  amount: number;
+  currency?: Currency;
+  exchangeRate?: number;
+  exchangeRateDate?: string;
+  method?: string;
+  notes?: string;
 }
 
 export interface CreatePaymentDto {
@@ -322,6 +333,48 @@ export interface CreatePaymentDto {
   method?: string;
   notes?: string;
   paidAt?: string;
+  discountPercent?: number;
+  complement?: ComplementPaymentDto;
+}
+
+// Inventory Types
+export enum MovementType {
+  USO = 'USO',
+  REPOSICION = 'REPOSICION',
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  quantity: number;
+  unit?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InventoryMovement {
+  id: string;
+  itemId: string;
+  type: MovementType;
+  quantity: number;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface CreateInventoryItemDto {
+  name: string;
+  description?: string;
+  category?: string;
+  quantity?: number;
+  unit?: string;
+}
+
+export interface CreateMovementDto {
+  type: MovementType;
+  quantity: number;
+  notes?: string;
 }
 
 // EventMenu Types

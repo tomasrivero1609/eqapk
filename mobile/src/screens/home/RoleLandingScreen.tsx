@@ -31,6 +31,7 @@ const GESTION_ROUTES: LandingRoute[] = [
 const ADMIN_ROUTES: LandingRoute[] = [
   { key: 'Admin', label: 'Ingresos', icon: 'stats-chart', screen: 'AdminSummary', description: 'Revisa ingresos totales', permissionModule: 'ingresos' },
   { key: 'Users', label: 'Usuarios', icon: 'people-circle', screen: 'UsersManagement', description: 'Gestiona usuarios y permisos', permissionModule: 'usuarios' },
+  { key: 'Inventory', label: 'Inventario', icon: 'cube', screen: 'InventoryList', description: 'Gestiona stock e insumos', permissionModule: 'inventario' },
 ];
 
 export default function RoleLandingScreen({ navigation }: any) {

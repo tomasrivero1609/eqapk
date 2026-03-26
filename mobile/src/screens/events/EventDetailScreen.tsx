@@ -180,11 +180,23 @@ export default function EventDetailScreen({ route, navigation }: any) {
     0,
     sectionData.childCount - coveredTotals.childCovered,
   );
+  const totalDiscount = payments.reduce((sum: number, payment: Payment) => {
+    if (!payment.discountPercent || payment.discountPercent <= 0) return sum;
+    const adult = payment.adultCovered || 0;
+    const juvenile = payment.juvenileCovered || 0;
+    const child = payment.childCovered || 0;
+    const ap = payment.adultPriceAtPayment ?? sectionData.adultPrice;
+    const jp = payment.juvenilePriceAtPayment ?? sectionData.juvenilePrice;
+    const cp = payment.childPriceAtPayment ?? sectionData.childPrice;
+    const coveredValue = adult * ap + juvenile * jp + child * cp;
+    return sum + coveredValue * (payment.discountPercent / 100);
+  }, 0);
   const totalDue =
     coveredTotals.coveredValue +
     remainingAdult * sectionData.adultPrice +
     remainingJuvenile * sectionData.juvenilePrice +
-    remainingChild * sectionData.childPrice;
+    remainingChild * sectionData.childPrice -
+    totalDiscount;
   const totalPaid = payments.reduce((sum: number, payment: Payment) => {
     const rate = payment.exchangeRate ?? exchangeRate;
     const converted = convertAmount(
@@ -681,11 +693,23 @@ export default function EventDetailScreen({ route, navigation }: any) {
                     }
                     activeOpacity={0.8}
                   >
-                    <Card className="px-4 py-3">
+                    <Card className={`px-4 py-3 ${payment.groupId ? 'border-amber-500/30' : ''}`}>
                       <View className="flex-row justify-between">
-                        <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-slate-100`}>
-                          {formatCurrency(payment.amount, payment.currency)}
-                        </Text>
+                        <View className="flex-row items-center gap-2">
+                          <Text className={`${isCompact ? 'text-sm' : 'text-base'} font-semibold text-slate-100`}>
+                            {formatCurrency(payment.amount, payment.currency)}
+                          </Text>
+                          {payment.groupId && (
+                            <View className="rounded-full bg-amber-500/20 px-2 py-0.5">
+                              <Text className="text-[10px] font-semibold text-amber-300">Compuesto</Text>
+                            </View>
+                          )}
+                          {payment.discountPercent > 0 && (
+                            <View className="rounded-full bg-emerald-500/20 px-2 py-0.5">
+                              <Text className="text-[10px] font-semibold text-emerald-300">-{payment.discountPercent}%</Text>
+                            </View>
+                          )}
+                        </View>
                         <Text className="text-xs text-slate-400">
                           {new Date(payment.paidAt).toLocaleDateString('es-AR')}
                         </Text>

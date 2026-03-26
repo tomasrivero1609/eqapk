@@ -62,7 +62,16 @@ const parseTimeValue = (time?: string) => {
 };
 
 const normalizeDecimalInput = (value: string) => {
-  const cleaned = value.replace(',', '.').replace(/[^0-9.]/g, '');
+  const hasComma = value.includes(',');
+  let cleaned: string;
+  if (hasComma) {
+    cleaned = value
+      .replace(/\./g, '')
+      .replace(',', '.')
+      .replace(/[^0-9.]/g, '');
+  } else {
+    cleaned = value.replace(/[^0-9.]/g, '');
+  }
   const parts = cleaned.split('.');
   if (parts.length <= 1) {
     return cleaned.replace(/^0+(?=\d)/, '');
@@ -94,6 +103,11 @@ export default function CreateEventScreen({ navigation, route }: any) {
     Keyboard.dismiss();
     setTimeout(() => setter(true), 150);
   };
+
+  const [adultPriceText, setAdultPriceText] = useState('0');
+  const [juvenilePriceText, setJuvenilePriceText] = useState('0');
+  const [childPriceText, setChildPriceText] = useState('0');
+  const [adjustmentText, setAdjustmentText] = useState('0');
 
   const [formData, setFormData] = useState<CreateEventDto>({
     name: '',
@@ -211,6 +225,10 @@ export default function CreateEventScreen({ navigation, route }: any) {
         eventType: event.eventType || EventType.SALON,
       };
       setFormData(mapped);
+      setAdultPriceText(String(event.adultPrice || 0));
+      setJuvenilePriceText(String(event.juvenilePrice || 0));
+      setChildPriceText(String(event.childPrice || 0));
+      setAdjustmentText(String(event.quarterlyAdjustmentPercent || 0));
     }
   }, [event]);
 
@@ -249,10 +267,13 @@ export default function CreateEventScreen({ navigation, route }: any) {
     (formData.juvenileCount || 0) +
     (formData.childCount || 0);
   const contractedPlates = formData.dishCount ?? 0;
+  const parsedAdultPrice = parseFloat(adultPriceText) || 0;
+  const parsedJuvenilePrice = parseFloat(juvenilePriceText) || 0;
+  const parsedChildPrice = parseFloat(childPriceText) || 0;
   const totalAmount =
-    (formData.adultCount || 0) * (formData.adultPrice || 0) +
-    (formData.juvenileCount || 0) * (formData.juvenilePrice || 0) +
-    (formData.childCount || 0) * (formData.childPrice || 0);
+    (formData.adultCount || 0) * parsedAdultPrice +
+    (formData.juvenileCount || 0) * parsedJuvenilePrice +
+    (formData.childCount || 0) * parsedChildPrice;
   const { data: dolarOficial, isLoading: isLoadingDolarOficial } = useQuery({
     queryKey: ['dolar-oficial'],
     queryFn: () => dolarService.getOficial(),
@@ -311,9 +332,9 @@ export default function CreateEventScreen({ navigation, route }: any) {
     if (
       !Number.isFinite(totalGuests) ||
       !Number.isFinite(contractedPlates) ||
-      !Number.isFinite(formData.adultPrice) ||
-      !Number.isFinite(formData.juvenilePrice) ||
-      !Number.isFinite(formData.childPrice)
+      !Number.isFinite(parsedAdultPrice) ||
+      !Number.isFinite(parsedJuvenilePrice) ||
+      !Number.isFinite(parsedChildPrice)
     ) {
       Alert.alert('Error', 'Revisa los valores numericos');
       return;
@@ -350,6 +371,10 @@ export default function CreateEventScreen({ navigation, route }: any) {
   const saveEvent = async () => {
     const payload: CreateEventDto = {
       ...formData,
+      adultPrice: parsedAdultPrice,
+      juvenilePrice: parsedJuvenilePrice,
+      childPrice: parsedChildPrice,
+      quarterlyAdjustmentPercent: parseFloat(adjustmentText) || 0,
       guestCount: contractedPlates,
       dishCount: contractedPlates,
       pricePerDish: 0,
@@ -686,12 +711,9 @@ export default function CreateEventScreen({ navigation, route }: any) {
                     label="Precio"
                     placeholder="450"
                     keyboardType="decimal-pad"
-                    value={formData.adultPrice?.toString() || '0'}
+                    value={adultPriceText}
                     onChangeText={(text) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        adultPrice: text ? parseFloat(normalizeDecimalInput(text)) : 0,
-                      }))
+                      setAdultPriceText(normalizeDecimalInput(text))
                     }
                   />
                 </View>
@@ -719,12 +741,9 @@ export default function CreateEventScreen({ navigation, route }: any) {
                     label="Precio"
                     placeholder="350"
                     keyboardType="decimal-pad"
-                    value={formData.juvenilePrice?.toString() || '0'}
+                    value={juvenilePriceText}
                     onChangeText={(text) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        juvenilePrice: text ? parseFloat(normalizeDecimalInput(text)) : 0,
-                      }))
+                      setJuvenilePriceText(normalizeDecimalInput(text))
                     }
                   />
                 </View>
@@ -752,12 +771,9 @@ export default function CreateEventScreen({ navigation, route }: any) {
                     label="Precio"
                     placeholder="250"
                     keyboardType="decimal-pad"
-                    value={formData.childPrice?.toString() || '0'}
+                    value={childPriceText}
                     onChangeText={(text) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        childPrice: text ? parseFloat(normalizeDecimalInput(text)) : 0,
-                      }))
+                      setChildPriceText(normalizeDecimalInput(text))
                     }
                   />
                 </View>
@@ -821,15 +837,10 @@ export default function CreateEventScreen({ navigation, route }: any) {
               <Input
                 label="Porcentaje (%)"
                 placeholder="3"
-                value={formData.quarterlyAdjustmentPercent?.toString() || '0'}
+                value={adjustmentText}
                 keyboardType="decimal-pad"
                 onChangeText={(text) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    quarterlyAdjustmentPercent: text
-                      ? parseFloat(normalizeDecimalInput(text))
-                      : 0,
-                  }))
+                  setAdjustmentText(normalizeDecimalInput(text))
                 }
               />
             </View>

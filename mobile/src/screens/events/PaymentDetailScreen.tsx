@@ -167,7 +167,17 @@ export default function PaymentDetailScreen({ route }: any) {
       </View>
 
         <View className="mt-6 px-6 space-y-4">
-          <Card>
+          <Card className={payment.groupId ? 'border-amber-500/30' : ''}>
+            {payment.groupId && (
+              <View className="mb-2 self-start rounded-full bg-amber-500/20 px-3 py-1">
+                <Text className="text-xs font-semibold text-amber-300">Pago compuesto</Text>
+              </View>
+            )}
+            {payment.discountPercent != null && payment.discountPercent > 0 && (
+              <View className="mb-2 self-start rounded-full bg-emerald-500/20 px-3 py-1">
+                <Text className="text-xs font-semibold text-emerald-300">Descuento {payment.discountPercent}% aplicado</Text>
+              </View>
+            )}
             <Text className="text-xs font-semibold text-slate-400">Monto</Text>
             <Text className="mt-1 text-xl font-bold text-slate-100">
               {formatCurrency(payment.amount, payment.currency)}

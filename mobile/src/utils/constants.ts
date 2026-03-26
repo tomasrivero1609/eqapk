@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
   ORDERS: '/orders',
   PAYMENTS: '/payments',
   USERS: '/users',
+  INVENTORY: '/inventory',
 } as const;
 
 // Storage Keys
