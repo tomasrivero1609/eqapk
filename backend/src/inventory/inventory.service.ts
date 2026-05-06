@@ -13,10 +13,37 @@ export class InventoryService {
     return this.prisma.inventoryItem.create({ data: dto });
   }
 
-  async findAll() {
-    return this.prisma.inventoryItem.findMany({
-      orderBy: [{ category: 'asc' }, { name: 'asc' }],
-    });
+  async findAll(params: { page?: number; limit?: number; search?: string } = {}) {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(200, Math.max(1, params.limit ?? 100));
+    const skip = (page - 1) * limit;
+
+    const where = params.search
+      ? {
+          OR: [
+            { name: { contains: params.search, mode: 'insensitive' as const } },
+            { category: { contains: params.search, mode: 'insensitive' as const } },
+          ],
+        }
+      : undefined;
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.inventoryItem.findMany({
+        where,
+        orderBy: [{ category: 'asc' }, { name: 'asc' }],
+        skip,
+        take: limit,
+      }),
+      this.prisma.inventoryItem.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async bulkCreate(items: CreateInventoryItemDto[]) {

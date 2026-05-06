@@ -165,21 +165,42 @@ export class EventsService {
     return event;
   }
 
-  async findAll(userId: string) {
-    return this.prisma.event.findMany({
-      include: {
-        client: true,
-        menus: {
-          include: {
-            menu: true,
+  async findAll(
+    userId: string,
+    params: { page?: number; limit?: number; type?: string } = {},
+  ) {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(100, Math.max(1, params.limit ?? 50));
+    const skip = (page - 1) * limit;
+
+    const where = params.type ? { eventType: params.type as any } : undefined;
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.event.findMany({
+        where,
+        include: {
+          client: true,
+          menus: {
+            include: {
+              menu: true,
+            },
           },
+          payments: true,
         },
-        payments: true,
-      },
-      orderBy: {
-        date: 'desc',
-      },
-    });
+        orderBy: { date: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.event.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string, userId: string) {

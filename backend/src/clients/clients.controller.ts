@@ -7,6 +7,9 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -28,8 +31,12 @@ export class ClientsController {
 
   @Get()
   @RequirePermission('clientes', 'ver')
-  findAll() {
-    return this.clientsService.findAll();
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+  ) {
+    return this.clientsService.findAll({ page, limit, search });
   }
 
   @Get(':id')

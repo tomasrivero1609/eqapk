@@ -11,6 +11,9 @@ import {
   BadRequestException,
   ForbiddenException,
   Req,
+  ParseIntPipe,
+  DefaultValuePipe,
+  Optional,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -45,8 +48,13 @@ export class EventsController {
   }
 
   @Get()
-  findAll(@GetUser() user: any) {
-    return this.eventsService.findAll(user.id);
+  findAll(
+    @GetUser() user: any,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @Query('type') type?: string,
+  ) {
+    return this.eventsService.findAll(user.id, { page, limit, type });
   }
 
   @Get('availability')

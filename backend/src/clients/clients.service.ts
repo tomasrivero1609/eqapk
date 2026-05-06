@@ -26,22 +26,48 @@ export class ClientsService {
     return client;
   }
 
-  async findAll() {
-    return this.prisma.client.findMany({
-      include: {
-        events: {
-          select: {
-            id: true,
-            name: true,
-            date: true,
-            status: true,
+  async findAll(params: { page?: number; limit?: number; search?: string } = {}) {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(100, Math.max(1, params.limit ?? 50));
+    const skip = (page - 1) * limit;
+
+    const where = params.search
+      ? {
+          OR: [
+            { name: { contains: params.search, mode: 'insensitive' as const } },
+            { email: { contains: params.search, mode: 'insensitive' as const } },
+            { phone: { contains: params.search, mode: 'insensitive' as const } },
+          ],
+        }
+      : undefined;
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.client.findMany({
+        where,
+        include: {
+          events: {
+            select: {
+              id: true,
+              name: true,
+              date: true,
+              status: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      this.prisma.client.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {

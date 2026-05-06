@@ -7,6 +7,9 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { CreateInventoryItemDto } from './dto/create-inventory-item.dto';
@@ -35,8 +38,12 @@ export class InventoryController {
 
   @Get()
   @RequirePermission('inventario', 'ver')
-  findAll() {
-    return this.inventoryService.findAll();
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(100), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+  ) {
+    return this.inventoryService.findAll({ page, limit, search });
   }
 
   @Get('categories')
