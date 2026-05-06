@@ -14,9 +14,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 import { eventService } from '../../services/eventService';
+import { isNetworkError, isColdStart } from '../../services/api';
 import { Event, EventType } from '../../types';
 import Screen from '../../components/ui/Screen';
 import EmptyState from '../../components/ui/EmptyState';
+import NetworkError from '../../components/ui/NetworkError';
 import { useAuthStore } from '../../store/authStore';
 
 const toLocalDate = (dateStr: string): Date => {
@@ -64,10 +66,11 @@ type SectionItem =
 
 export default function EntrevistasListScreen({ navigation }: any) {
   const canCreate = useAuthStore((s) => s.hasPermission('entrevistas', 'crear'));
-  const { data: allEvents, isLoading, refetch } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => eventService.getAll(),
+  const { data: result, isLoading, error, refetch } = useQuery({
+    queryKey: ['events', 'VISITA'],
+    queryFn: () => eventService.getAll({ type: 'VISITA', limit: 100 }),
   });
+  const allEvents = result?.data ?? [];
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isCompact = width < 400;
@@ -78,8 +81,7 @@ export default function EntrevistasListScreen({ navigation }: any) {
   }, [navigation, refetch]);
 
   const sections = useMemo(() => {
-    const entrevistas = (allEvents || [])
-      .filter((e) => e.eventType === EventType.VISITA)
+    const entrevistas = allEvents
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const upcoming = entrevistas.filter((e) => !isPast(e.date));
@@ -104,6 +106,14 @@ export default function EntrevistasListScreen({ navigation }: any) {
     return (
       <Screen className="items-center justify-center">
         <ActivityIndicator size="large" color="#8B5CF6" />
+      </Screen>
+    );
+  }
+
+  if (error && (isNetworkError(error) || isColdStart(error))) {
+    return (
+      <Screen>
+        <NetworkError error={error} onRetry={refetch} isRetrying={isLoading} />
       </Screen>
     );
   }

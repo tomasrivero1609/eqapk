@@ -20,6 +20,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import { formatCurrency } from '../../utils/format';
+import { formatErrorForAlert } from '../../utils/errorMessage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const currencyOptions: Currency[] = [Currency.ARS, Currency.USD];
@@ -168,10 +169,11 @@ export default function CreateEventScreen({ navigation, route }: any) {
     staleTime: 60 * 1000,
   });
 
-  const { data: clients } = useQuery({
+  const { data: clientsResult } = useQuery({
     queryKey: ['clients'],
-    queryFn: () => clientService.getAll(),
+    queryFn: () => clientService.getAll({ limit: 100 }),
   });
+  const clients = clientsResult?.data;
 
   useEffect(() => {
     if (event) {
@@ -298,7 +300,7 @@ export default function CreateEventScreen({ navigation, route }: any) {
       ]);
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.message || 'Error al guardar el evento');
+      Alert.alert('Error', formatErrorForAlert(error, 'Error al guardar el evento'));
     },
   });
 

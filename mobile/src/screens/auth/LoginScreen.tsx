@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
+import { formatErrorForAlert } from '../../utils/errorMessage';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
@@ -20,7 +21,7 @@ export default function LoginScreen({ navigation }: any) {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor completa todos los campos');
+      Alert.alert('Error', 'Completá correo electrónico y contraseña');
       return;
     }
 
@@ -28,7 +29,10 @@ export default function LoginScreen({ navigation }: any) {
     try {
       await login(email, password);
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Error al iniciar sesion');
+      Alert.alert(
+        'Error',
+        formatErrorForAlert(error, 'Error al iniciar sesion'),
+      );
     } finally {
       setLoading(false);
     }
@@ -41,28 +45,38 @@ export default function LoginScreen({ navigation }: any) {
     >
       <ScrollView contentContainerClassName="flex-grow justify-center px-6 py-12">
         <View className="mb-10 items-center">
-          <Text className="text-3xl font-bold text-slate-100 mb-2">
-            Gestion de eventos
+          <Image
+            source={require('../../../assets/icon.png')}
+            style={{ width: 88, height: 88, borderRadius: 22, marginBottom: 20 }}
+            resizeMode="contain"
+            accessibilityRole="image"
+            accessibilityLabel="Logo Eventos Quilmes"
+          />
+          <Text className="text-3xl font-bold text-slate-100 mb-2 text-center">
+            Eventos Quilmes
           </Text>
-          <Text className="text-base text-slate-400">
-            Inicia sesion para continuar
+          <Text className="text-base text-slate-400 text-center px-2">
+            Iniciá sesión con tu correo y contraseña
           </Text>
         </View>
 
         <View className="space-y-4">
           <Input
-            label="Email"
-            placeholder="tu@email.com"
+            label="Correo electrónico"
+            placeholder="nombre@ejemplo.com"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
           />
+          <Text className="-mt-1 text-xs leading-5 text-slate-500 px-1">
+            El sistema solo usa correo electrónico (no hay usuario distinto).
+          </Text>
 
           <Input
-            label="Contrasena"
-            placeholder="Minimo 6 caracteres"
+            label="Contraseña"
+            placeholder="Mínimo 6 caracteres"
             value={password}
             onChangeText={setPassword}
             secureTextEntry

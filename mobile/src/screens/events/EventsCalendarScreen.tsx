@@ -5,7 +5,7 @@ import Screen from '../../components/ui/Screen';
 import Card from '../../components/ui/Card';
 import EmptyState from '../../components/ui/EmptyState';
 import { eventService } from '../../services/eventService';
-import { Event, EventType } from '../../types';
+import { Event } from '../../types';
 import { parseLocalDateString, formatLocalDate } from '../../utils/date';
 
 const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
@@ -33,9 +33,9 @@ const buildMonthGrid = (base: Date) => {
 };
 
 export default function EventsCalendarScreen({ navigation }: any) {
-  const { data: events, isLoading } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => eventService.getAll(),
+  const { data: eventsResult, isLoading } = useQuery({
+    queryKey: ['events', 'SALON'],
+    queryFn: () => eventService.getAll({ type: 'SALON', limit: 100 }),
   });
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
@@ -46,10 +46,7 @@ export default function EventsCalendarScreen({ navigation }: any) {
   );
   const [selectedDate, setSelectedDate] = useState<Date>(today);
 
-  const salonEvents = useMemo(
-    () => (events || []).filter((e) => !e.eventType || e.eventType === EventType.SALON),
-    [events],
-  );
+  const salonEvents = eventsResult?.data ?? [];
 
   const eventsByDay = useMemo(() => {
     const map = new Map<string, Event[]>();

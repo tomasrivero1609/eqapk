@@ -6,6 +6,7 @@ import Card from "../../components/ui/Card";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 import { eventService } from "../../services/eventService";
+import { formatErrorForAlert } from "../../utils/errorMessage";
 import { Event } from "../../types";
 
 export default function EventSpecsScreen({ route }: any) {
@@ -79,7 +80,7 @@ export default function EventSpecsScreen({ route }: any) {
     onError: (error: any) => {
       Alert.alert(
         "Error",
-        error.response?.data?.message || "No se pudieron guardar los cambios",
+        formatErrorForAlert(error, "No se pudieron guardar los cambios"),
       );
     },
   });

@@ -1,10 +1,12 @@
 import { api } from './api';
 import { API_ENDPOINTS } from '../utils/constants';
-import { Client, CreateClientDto } from '../types';
+import { Client, CreateClientDto, PaginatedResult } from '../types';
+
+export type ClientsParams = { page?: number; limit?: number; search?: string };
 
 export const clientService = {
-  async getAll(): Promise<Client[]> {
-    const response = await api.get<Client[]>(API_ENDPOINTS.CLIENTS);
+  async getAll(params: ClientsParams = {}): Promise<PaginatedResult<Client>> {
+    const response = await api.get<PaginatedResult<Client>>(API_ENDPOINTS.CLIENTS, { params });
     return response.data;
   },
 

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { eventService } from '../../services/eventService';
+import { formatErrorForAlert } from '../../utils/errorMessage';
 import { CreateEventDto, EventType } from '../../types';
 import Screen from '../../components/ui/Screen';
 import Input from '../../components/ui/Input';
@@ -112,7 +113,10 @@ export default function CreateVisitScreen({ navigation }: any) {
       ]);
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.message || 'Error al registrar la entrevista');
+      Alert.alert(
+        'Error',
+        formatErrorForAlert(error, 'Error al registrar la entrevista'),
+      );
     },
   });
 

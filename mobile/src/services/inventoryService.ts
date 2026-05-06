@@ -5,11 +5,14 @@ import {
   InventoryMovement,
   CreateInventoryItemDto,
   CreateMovementDto,
+  PaginatedResult,
 } from '../types';
 
+export type InventoryParams = { page?: number; limit?: number; search?: string };
+
 export const inventoryService = {
-  async getAll(): Promise<InventoryItem[]> {
-    const response = await api.get<InventoryItem[]>(API_ENDPOINTS.INVENTORY);
+  async getAll(params: InventoryParams = {}): Promise<PaginatedResult<InventoryItem>> {
+    const response = await api.get<PaginatedResult<InventoryItem>>(API_ENDPOINTS.INVENTORY, { params });
     return response.data;
   },
 

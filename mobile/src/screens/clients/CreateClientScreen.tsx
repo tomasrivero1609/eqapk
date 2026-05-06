@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Alert } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { clientService } from '../../services/clientService';
+import { formatErrorForAlert } from '../../utils/errorMessage';
 import Screen from '../../components/ui/Screen';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -61,8 +62,10 @@ export default function CreateClientScreen({ navigation, route }: any) {
     onError: (error: any) => {
       Alert.alert(
         'Error',
-        error.response?.data?.message ||
-          (clientId ? 'Error al actualizar cliente' : 'Error al crear cliente'),
+        formatErrorForAlert(
+          error,
+          clientId ? 'Error al actualizar cliente' : 'Error al crear cliente',
+        ),
       );
     },
   });

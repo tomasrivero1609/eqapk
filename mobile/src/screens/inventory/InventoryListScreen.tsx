@@ -7,15 +7,20 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Alert,
+  TextInput,
+  StyleSheet,
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { inventoryService } from '../../services/inventoryService';
+import { formatErrorForAlert } from '../../utils/errorMessage';
+import { isNetworkError, isColdStart } from '../../services/api';
 import { InventoryItem } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import Screen from '../../components/ui/Screen';
 import Card from '../../components/ui/Card';
 import EmptyState from '../../components/ui/EmptyState';
+import NetworkError from '../../components/ui/NetworkError';
 import Button from '../../components/ui/Button';
 
 const SEED_DATA = [
@@ -68,10 +73,12 @@ interface Section {
 export default function InventoryListScreen({ navigation }: any) {
   const canCreate = useAuthStore((s) => s.hasPermission('inventario', 'crear'));
   const queryClient = useQueryClient();
-  const { data: items, isLoading, refetch } = useQuery({
-    queryKey: ['inventory'],
-    queryFn: () => inventoryService.getAll(),
+  const [search, setSearch] = useState('');
+  const { data: result, isLoading, error, refetch } = useQuery({
+    queryKey: ['inventory', search],
+    queryFn: () => inventoryService.getAll({ limit: 200, search: search || undefined }),
   });
+  const items = result?.data;
   const insets = useSafeAreaInsets();
 
   const seedMutation = useMutation({
@@ -81,7 +88,7 @@ export default function InventoryListScreen({ navigation }: any) {
       Alert.alert('Listo', `Se cargaron ${result.count} items`);
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.message || 'No se pudo cargar');
+      Alert.alert('Error', formatErrorForAlert(error, 'No se pudo cargar'));
     },
   });
   const { width } = useWindowDimensions();
@@ -107,6 +114,14 @@ export default function InventoryListScreen({ navigation }: any) {
     return (
       <Screen className="items-center justify-center">
         <ActivityIndicator size="large" color="#8B5CF6" />
+      </Screen>
+    );
+  }
+
+  if (error && !items && (isNetworkError(error) || isColdStart(error))) {
+    return (
+      <Screen>
+        <NetworkError error={error} onRetry={refetch} isRetrying={isLoading} />
       </Screen>
     );
   }
@@ -168,6 +183,18 @@ export default function InventoryListScreen({ navigation }: any) {
           />
         </View>
       )}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Buscar por nombre o categoría…"
+          placeholderTextColor="#64748b"
+          value={search}
+          onChangeText={setSearch}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+          autoCapitalize="none"
+        />
+      </View>
       {sections.length === 0 ? (
         <View className="flex-1 justify-center px-6">
           <EmptyState
@@ -211,3 +238,21 @@ export default function InventoryListScreen({ navigation }: any) {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    paddingTop: 4,
+  },
+  searchInput: {
+    backgroundColor: '#0f172a',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    color: '#f1f5f9',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+});

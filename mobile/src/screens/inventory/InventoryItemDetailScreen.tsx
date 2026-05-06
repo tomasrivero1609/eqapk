@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryService } from '../../services/inventoryService';
+import { formatErrorForAlert } from '../../utils/errorMessage';
 import { InventoryMovement, MovementType } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import Screen from '../../components/ui/Screen';
@@ -61,7 +62,10 @@ export default function InventoryItemDetailScreen({ route, navigation }: any) {
       Alert.alert('Listo', movementType === MovementType.USO ? 'Uso registrado' : 'Stock repuesto');
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.message || 'No se pudo registrar el movimiento');
+      Alert.alert(
+        'Error',
+        formatErrorForAlert(error, 'No se pudo registrar el movimiento'),
+      );
     },
   });
 
@@ -72,7 +76,7 @@ export default function InventoryItemDetailScreen({ route, navigation }: any) {
       navigation.goBack();
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.message || 'No se pudo eliminar');
+      Alert.alert('Error', formatErrorForAlert(error, 'No se pudo eliminar'));
     },
   });
 

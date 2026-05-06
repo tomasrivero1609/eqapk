@@ -7,8 +7,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
+import { formatErrorForAlert } from '../../utils/errorMessage';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
@@ -26,7 +28,7 @@ export default function RegisterScreen({ navigation }: any) {
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'La contrasena debe tener al menos 6 caracteres');
+      Alert.alert('Error', 'La contraseña debe tener al menos 6 caracteres');
       return;
     }
 
@@ -34,7 +36,7 @@ export default function RegisterScreen({ navigation }: any) {
     try {
       await register(email, password, name);
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'Error al registrarse');
+      Alert.alert('Error', formatErrorForAlert(error, 'Error al registrarse'));
     } finally {
       setLoading(false);
     }
@@ -47,11 +49,19 @@ export default function RegisterScreen({ navigation }: any) {
     >
       <ScrollView contentContainerClassName="flex-grow justify-center px-6 py-12">
         <View className="mb-10 items-center">
-          <Text className="text-3xl font-bold text-slate-100 mb-2">
+          <Image
+            source={require('../../../assets/icon.png')}
+            style={{ width: 72, height: 72, borderRadius: 18, marginBottom: 16 }}
+            resizeMode="contain"
+            accessibilityRole="image"
+            accessibilityLabel="Logo Eventos Quilmes"
+          />
+          <Text className="text-sm font-semibold text-violet-300 mb-1">Eventos Quilmes</Text>
+          <Text className="text-3xl font-bold text-slate-100 mb-2 text-center">
             Crear cuenta
           </Text>
-          <Text className="text-base text-slate-400">
-            Registrate para comenzar
+          <Text className="text-base text-slate-400 text-center px-2">
+            Registrate con correo electrónico
           </Text>
         </View>
 
@@ -64,8 +74,8 @@ export default function RegisterScreen({ navigation }: any) {
           />
 
           <Input
-            label="Email"
-            placeholder="tu@email.com"
+            label="Correo electrónico"
+            placeholder="nombre@ejemplo.com"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -74,8 +84,8 @@ export default function RegisterScreen({ navigation }: any) {
           />
 
           <Input
-            label="Contrasena"
-            placeholder="Minimo 6 caracteres"
+            label="Contraseña"
+            placeholder="Mínimo 6 caracteres"
             value={password}
             onChangeText={setPassword}
             secureTextEntry

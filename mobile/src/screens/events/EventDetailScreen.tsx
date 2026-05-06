@@ -26,6 +26,7 @@ import { useAuthStore } from '../../store/authStore';
 import { formatCurrency } from '../../utils/format';
 import { convertAmount } from '../../utils/currency';
 import { formatLocalDate } from '../../utils/date';
+import { formatErrorForAlert } from '../../utils/errorMessage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 Notifications.setNotificationHandler({
@@ -275,7 +276,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
     } catch (error: any) {
       Alert.alert(
         'Error',
-        error?.message || 'No se pudo programar el aviso.',
+        formatErrorForAlert(error, 'No se pudo programar el aviso.'),
       );
     }
   };
@@ -304,7 +305,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
       setShowAdjustmentModal(true);
     } catch (error: any) {
       setAdjustmentError(
-        error.response?.data?.message || 'No se pudo calcular el ajuste.',
+        formatErrorForAlert(error, 'No se pudo calcular el ajuste.'),
       );
       setShowAdjustmentModal(true);
     } finally {
@@ -326,7 +327,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
     } catch (error: any) {
       Alert.alert(
         'Error',
-        error.response?.data?.message || 'No se pudo aplicar el ajuste.',
+        formatErrorForAlert(error, 'No se pudo aplicar el ajuste.'),
       );
     } finally {
       setIsAdjusting(false);
@@ -451,7 +452,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
         mimeType: 'application/pdf',
       });
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'No se pudo generar el PDF.');
+      Alert.alert('Error', formatErrorForAlert(error, 'No se pudo generar el PDF.'));
     }
   };
 
@@ -704,7 +705,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
                               <Text className="text-[10px] font-semibold text-amber-300">Compuesto</Text>
                             </View>
                           )}
-                          {payment.discountPercent > 0 && (
+                          {(payment.discountPercent ?? 0) > 0 && (
                             <View className="rounded-full bg-emerald-500/20 px-2 py-0.5">
                               <Text className="text-[10px] font-semibold text-emerald-300">-{payment.discountPercent}%</Text>
                             </View>
@@ -811,7 +812,7 @@ export default function EventDetailScreen({ route, navigation }: any) {
                         } catch (error: any) {
                           Alert.alert(
                             'Error',
-                            error.response?.data?.message || 'No se pudo eliminar',
+                            formatErrorForAlert(error, 'No se pudo eliminar'),
                           );
                         }
                       },

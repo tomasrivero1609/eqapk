@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Alert } from 'react-native';
+import { formatErrorForAlert } from './src/utils/errorMessage';
 import { useAuthStore } from './src/store/authStore';
 import AppNavigator from './src/navigation/AppNavigator';
 import './global.css';
@@ -16,7 +17,7 @@ export default function App() {
 
   useEffect(() => {
     const handler = (error: any, isFatal?: boolean) => {
-      const message = error?.message || String(error);
+      const message = formatErrorForAlert(error, 'Error inesperado');
       Alert.alert(
         'Error inesperado',
         `${message}${isFatal ? '\n\n(La app se cerro por un error fatal)' : ''}`,

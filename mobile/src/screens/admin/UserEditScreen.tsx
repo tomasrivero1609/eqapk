@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 // @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 import { userService } from '../../services/userService';
+import { formatErrorForAlert } from '../../utils/errorMessage';
 import { PermissionModule, PermissionAction, UserPermissions } from '../../types';
 import Screen from '../../components/ui/Screen';
 import Input from '../../components/ui/Input';
@@ -44,6 +45,7 @@ const MODULE_ACTIONS: Record<PermissionModule, PermissionAction[]> = {
   ingresos: ['ver'],
   demostraciones: ['ver'],
   usuarios: ['ver', 'crear', 'editar', 'eliminar'],
+  inventario: ['ver', 'crear', 'editar', 'eliminar'],
 };
 
 export default function UserEditScreen({ route, navigation }: any) {
@@ -84,7 +86,7 @@ export default function UserEditScreen({ route, navigation }: any) {
       ]);
     },
     onError: (err: any) => {
-      Alert.alert('Error', err.response?.data?.message || 'No se pudo crear');
+      Alert.alert('Error', formatErrorForAlert(err, 'No se pudo crear'));
     },
   });
 
@@ -96,7 +98,7 @@ export default function UserEditScreen({ route, navigation }: any) {
       Alert.alert('Listo', 'Usuario actualizado');
     },
     onError: (err: any) => {
-      Alert.alert('Error', err.response?.data?.message || 'No se pudo actualizar');
+      Alert.alert('Error', formatErrorForAlert(err, 'No se pudo actualizar'));
     },
   });
 
@@ -108,7 +110,7 @@ export default function UserEditScreen({ route, navigation }: any) {
       Alert.alert('Listo', 'Contraseña actualizada');
     },
     onError: (err: any) => {
-      Alert.alert('Error', err.response?.data?.message || 'No se pudo cambiar');
+      Alert.alert('Error', formatErrorForAlert(err, 'No se pudo cambiar'));
     },
   });
 

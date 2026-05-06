@@ -12,6 +12,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import Card from '../../components/ui/Card';
 import { convertAmount } from '../../utils/currency';
 import { formatCurrency } from '../../utils/format';
+import { formatErrorForAlert } from '../../utils/errorMessage';
 
 const paymentMethods = ['Efectivo', 'Transferencia', 'Tarjeta', 'Otro'];
 
@@ -389,7 +390,7 @@ export default function CreatePaymentScreen({ navigation, route }: any) {
       ]);
     },
     onError: (error: any) => {
-      Alert.alert('Error', error.response?.data?.message || 'Error al registrar pago');
+      Alert.alert('Error', formatErrorForAlert(error, 'Error al registrar pago'));
     },
   });
 

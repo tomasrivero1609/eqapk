@@ -1,10 +1,12 @@
 import { api } from './api';
 import { API_ENDPOINTS } from '../utils/constants';
-import { Event, CreateEventDto, CalendarAvailability } from '../types';
+import { Event, CreateEventDto, CalendarAvailability, PaginatedResult } from '../types';
+
+export type EventsParams = { page?: number; limit?: number; type?: string };
 
 export const eventService = {
-  async getAll(): Promise<Event[]> {
-    const response = await api.get<Event[]>(API_ENDPOINTS.EVENTS);
+  async getAll(params: EventsParams = {}): Promise<PaginatedResult<Event>> {
+    const response = await api.get<PaginatedResult<Event>>(API_ENDPOINTS.EVENTS, { params });
     return response.data;
   },
 

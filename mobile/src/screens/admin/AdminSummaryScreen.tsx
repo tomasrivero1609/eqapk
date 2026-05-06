@@ -28,9 +28,9 @@ export default function AdminSummaryScreen() {
     queryKey: ['payments-summary'],
     queryFn: () => paymentService.getSummary(),
   });
-  const { data: events, isLoading: isLoadingEvents } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => eventService.getAll(),
+  const { data: eventsResult, isLoading: isLoadingEvents } = useQuery({
+    queryKey: ['events', 'SALON'],
+    queryFn: () => eventService.getAll({ type: 'SALON', limit: 100 }),
   });
   const { width } = useWindowDimensions();
   const isCompact = width < 400;
@@ -39,10 +39,7 @@ export default function AdminSummaryScreen() {
   const ars = data?.[Currency.ARS] ?? 0;
   const usd = data?.[Currency.USD] ?? 0;
   const now = new Date();
-  const salonEvents = useMemo(
-    () => (events || []).filter((e: Event) => e.eventType === EventType.SALON),
-    [events],
-  );
+  const salonEvents = eventsResult?.data ?? [];
   const monthEvents = useMemo(() => {
     return salonEvents.filter((event: Event) => {
       const date = new Date(event.date);

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { clientService } from '../../services/clientService';
@@ -10,23 +10,12 @@ import { Client } from '../../types';
 
 export default function SelectClientScreen({ navigation }: any) {
   const [search, setSearch] = useState('');
-  const { data: clients, isLoading } = useQuery({
-    queryKey: ['clients'],
-    queryFn: () => clientService.getAll(),
+  const { data: result, isLoading } = useQuery({
+    queryKey: ['clients', search],
+    queryFn: () => clientService.getAll({ limit: 50, search: search.trim() || undefined }),
   });
 
-  const filteredClients = useMemo(() => {
-    if (!clients) {
-      return [];
-    }
-    const term = search.trim().toLowerCase();
-    if (!term) {
-      return clients;
-    }
-    return clients.filter((client) =>
-      client.name.toLowerCase().includes(term),
-    );
-  }, [clients, search]);
+  const filteredClients = result?.data ?? [];
 
   if (isLoading) {
     return (
@@ -91,7 +80,7 @@ export default function SelectClientScreen({ navigation }: any) {
         data={filteredClients}
         renderItem={renderClient}
         keyExtractor={(item) => item.id}
-        contentContainerClassName="pb-6"
+        contentContainerStyle={{ paddingBottom: 24 }}
         ListEmptyComponent={
           <EmptyState
             title="No hay clientes"

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -14,9 +14,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // @ts-ignore
 import { Ionicons } from '@expo/vector-icons';
 import { eventService } from '../../services/eventService';
+import { isNetworkError, isColdStart } from '../../services/api';
 import { Event, EventStatus, EventType } from '../../types';
 import Screen from '../../components/ui/Screen';
 import EmptyState from '../../components/ui/EmptyState';
+import NetworkError from '../../components/ui/NetworkError';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/format';
@@ -52,32 +54,72 @@ const statusVariant = (status: EventStatus) => {
   }
 };
 
+const PAGE_SIZE = 20;
+
 export default function EventsListScreen({ navigation }: any) {
   const canCreate = useAuthStore((s) => s.hasPermission('eventos', 'crear'));
-  const { data: events, isLoading, refetch } = useQuery({
-    queryKey: ['events'],
-    queryFn: () => eventService.getAll(),
+  const [page, setPage] = useState(1);
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
+    queryKey: ['events', 'SALON', page],
+    queryFn: () => eventService.getAll({ page, limit: PAGE_SIZE, type: 'SALON' }),
+    placeholderData: (prev) => prev,
   });
+
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const isCompact = width < 400;
   const isLandscape = width > height;
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      refetch();
-    });
+    if (data) {
+      setAllEvents((prev) => {
+        if (page === 1) return data.data;
+        const ids = new Set(prev.map((e) => e.id));
+        return [...prev, ...data.data.filter((e) => !ids.has(e.id))];
+      });
+      setHasMore(page < data.totalPages);
+    }
+  }, [data, page]);
+
+  const handleRefresh = useCallback(() => {
+    setPage(1);
+    setAllEvents([]);
+    setHasMore(true);
+    refetch();
+  }, [refetch]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', handleRefresh);
     return unsubscribe;
-  }, [navigation, refetch]);
+  }, [navigation, handleRefresh]);
 
-  const salonEvents = (events || []).filter(
-    (e) => !e.eventType || e.eventType === EventType.SALON,
-  );
+  const handleLoadMore = useCallback(() => {
+    if (!loadingMore && hasMore && !isFetching) {
+      setLoadingMore(true);
+      setPage((p) => p + 1);
+    }
+  }, [loadingMore, hasMore, isFetching]);
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isFetching) setLoadingMore(false);
+  }, [isFetching]);
+
+  if (isLoading && allEvents.length === 0) {
     return (
       <Screen className="items-center justify-center">
         <ActivityIndicator size="large" color="#8B5CF6" />
+      </Screen>
+    );
+  }
+
+  if (error && allEvents.length === 0 && (isNetworkError(error) || isColdStart(error))) {
+    return (
+      <Screen>
+        <NetworkError error={error} onRetry={handleRefresh} isRetrying={isLoading} />
       </Screen>
     );
   }
@@ -205,9 +247,8 @@ export default function EventsListScreen({ navigation }: any) {
         )}
       </View>
 
-      {/* Lista de eventos */}
       <FlatList
-        data={salonEvents}
+        data={allEvents}
         renderItem={renderEvent}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
@@ -215,11 +256,26 @@ export default function EventsListScreen({ navigation }: any) {
           { paddingBottom: insets.bottom + 120 }
         ]}
         showsVerticalScrollIndicator={false}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3}
         ListEmptyComponent={
           <EmptyState
             title="No hay eventos"
             description="Crea tu primer evento para comenzar"
           />
+        }
+        ListFooterComponent={
+          loadingMore ? (
+            <ActivityIndicator size="small" color="#8B5CF6" style={{ marginVertical: 16 }} />
+          ) : hasMore && allEvents.length > 0 ? (
+            <TouchableOpacity
+              style={styles.loadMoreBtn}
+              onPress={handleLoadMore}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.loadMoreText}>Cargar más</Text>
+            </TouchableOpacity>
+          ) : null
         }
       />
     </Screen>
@@ -343,5 +399,20 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: '#1e293b',
     marginHorizontal: 8,
+  },
+  loadMoreBtn: {
+    alignSelf: 'center',
+    marginVertical: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: '#1e293b',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  loadMoreText: {
+    color: '#c4b5fd',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

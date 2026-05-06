@@ -1,3 +1,12 @@
+// Paginated API response
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 // Permission Types
 export type PermissionAction = 'ver' | 'crear' | 'editar' | 'eliminar';
 export type PermissionModule = 'eventos' | 'entrevistas' | 'francos' | 'clientes' | 'ingresos' | 'demostraciones' | 'usuarios' | 'inventario';

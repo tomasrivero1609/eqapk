@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { inventoryService } from '../../services/inventoryService';
+import { formatErrorForAlert } from '../../utils/errorMessage';
 import Screen from '../../components/ui/Screen';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
@@ -58,10 +59,7 @@ export default function CreateInventoryItemScreen({ navigation, route }: any) {
       ]);
     },
     onError: (error: any) => {
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'No se pudo guardar el item',
-      );
+      Alert.alert('Error', formatErrorForAlert(error, 'No se pudo guardar el item'));
     },
   });
 
