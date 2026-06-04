@@ -9,6 +9,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ALL_PERMISSIONS } from '../common/permissions';
 
 @Injectable()
 export class AuthService {
@@ -51,7 +52,7 @@ export class AuthService {
 
     const permissions =
       user.role === 'SUPERADMIN'
-        ? this.ALL_PERMISSIONS
+        ? ALL_PERMISSIONS
         : (user.permissions as Record<string, string[]>) || {};
 
     return {
@@ -65,16 +66,6 @@ export class AuthService {
       access_token: token,
     };
   }
-
-  private readonly ALL_PERMISSIONS = {
-    eventos: ['ver', 'crear', 'editar', 'eliminar'],
-    entrevistas: ['ver', 'crear', 'editar', 'eliminar'],
-    francos: ['ver', 'crear', 'editar', 'eliminar'],
-    clientes: ['ver', 'crear', 'editar', 'eliminar'],
-    ingresos: ['ver'],
-    demostraciones: ['ver'],
-    usuarios: ['ver', 'crear', 'editar', 'eliminar'],
-  };
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
@@ -97,7 +88,7 @@ export class AuthService {
 
     const permissions =
       user.role === 'SUPERADMIN'
-        ? this.ALL_PERMISSIONS
+        ? ALL_PERMISSIONS
         : (user.permissions as Record<string, string[]>) || {};
 
     return {

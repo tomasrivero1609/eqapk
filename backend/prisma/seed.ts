@@ -3,6 +3,7 @@ import { PrismaClient, UserRole } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as bcrypt from 'bcryptjs';
+import { ALL_PERMISSIONS } from '../src/common/permissions';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -12,16 +13,6 @@ if (!databaseUrl) {
 const pool = new Pool({ connectionString: databaseUrl });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
-
-const ALL_PERMISSIONS = {
-  eventos: ['ver', 'crear', 'editar', 'eliminar'],
-  entrevistas: ['ver', 'crear', 'editar', 'eliminar'],
-  francos: ['ver', 'crear', 'editar', 'eliminar'],
-  clientes: ['ver', 'crear', 'editar', 'eliminar'],
-  ingresos: ['ver'],
-  demostraciones: ['ver'],
-  usuarios: ['ver', 'crear', 'editar', 'eliminar'],
-};
 
 async function main() {
   const adminPassword = await bcrypt.hash('Admin123!', 10);

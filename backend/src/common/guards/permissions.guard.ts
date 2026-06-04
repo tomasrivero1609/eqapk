@@ -4,6 +4,7 @@ import {
   PERMISSION_KEY,
   RequiredPermission,
 } from '../decorators/permissions.decorator';
+import { userHasPermission, PermissionsMap } from '../permissions';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -19,19 +20,10 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
-    const user = request.user as {
-      role?: string;
-      permissions?: Record<string, string[]>;
-    } | undefined;
+    const request = context.switchToHttp().getRequest<{
+      user?: { role?: string; permissions?: PermissionsMap };
+    }>();
 
-    if (!user) return false;
-
-    if (user.role === 'SUPERADMIN') return true;
-
-    const modulePerms = user.permissions?.[required.module];
-    if (!modulePerms || !Array.isArray(modulePerms)) return false;
-
-    return modulePerms.includes(required.action);
+    return userHasPermission(request.user, required.module, required.action);
   }
 }

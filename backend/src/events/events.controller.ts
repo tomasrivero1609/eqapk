@@ -20,6 +20,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { GetUser } from '../common/decorators/get-user.decorator';
+import { userHasPermission } from '../common/permissions';
 
 const EVENT_TYPE_MODULE_MAP: Record<string, string> = {
   SALON: 'eventos',
@@ -28,9 +29,7 @@ const EVENT_TYPE_MODULE_MAP: Record<string, string> = {
 };
 
 function checkPermission(user: any, module: string, action: string) {
-  if (user.role === 'SUPERADMIN') return;
-  const perms = user.permissions?.[module];
-  if (!perms || !Array.isArray(perms) || !perms.includes(action)) {
+  if (!userHasPermission(user, module, action)) {
     throw new ForbiddenException('No tienes permiso para esta acción');
   }
 }
