@@ -90,20 +90,31 @@ sudo docker exec -it eqapk-api npx prisma db seed
 
 > A futuro, NO repetir esto en cada deploy: el seed reescribe contrasenas.
 
-## Paso 5 — Emitir el certificado TLS
+## Paso 5 — Certificado TLS (editando el TEMPLATE de recepcion)
 
-Primero agregar **solo el block :80** de `deploy/nginx-eqapk.conf` al final de
-`/home/ubuntu/recepcioneq/nginx/nginx.conf` (el block HTTPS todavia no, porque
-el cert no existe):
+> IMPORTANTE: `deploy.sh` de recepcion REGENERA `nginx/nginx.conf` desde el
+> template `nginx/nginx.ssl.conf` (`sed "s/__DOMAIN__/${DOMAIN}/g" ... > nginx.conf`).
+> Por eso el bloque de eqapk va en el **template**, NO en `nginx.conf` (que se
+> sobreescribe en cada deploy). Los bloques de eqapk usan el dominio literal
+> `eqapk.recepcioneq.com`, asi que el `sed` no los toca.
+
+### 5a. Agregar SOLO el block :80 al template y regenerar
+
+(El block HTTPS todavia no: el cert aun no existe y nginx no arrancaria.)
 
 ```bash
-nano /home/ubuntu/recepcioneq/nginx/nginx.conf
-# pegar SOLO el primer "server { listen 80; server_name eqapk.recepcioneq.com; ... }"
-sudo docker exec recepcioneq-nginx-1 nginx -t      # validar
-sudo docker exec recepcioneq-nginx-1 nginx -s reload
+cd /home/ubuntu/recepcioneq
+# Pegar al final del template SOLO el primer server { listen 80; ... } de
+# deploy/nginx-eqapk.conf (ACME challenge + redirect).
+nano nginx/nginx.ssl.conf
+
+# Regenerar nginx.conf desde el template, validar y recargar.
+DOMAIN=$(grep -E '^DOMAIN=' .env | head -1 | sed -E 's/^DOMAIN=//; s/^"//; s/"$//')
+sed "s/__DOMAIN__/${DOMAIN}/g" nginx/nginx.ssl.conf > nginx/nginx.conf
+sudo docker exec recepcioneq-nginx-1 nginx -t && sudo docker exec recepcioneq-nginx-1 nginx -s reload
 ```
 
-Emitir el cert con el certbot existente (webroot compartido):
+### 5b. Emitir el cert con el certbot existente (webroot compartido)
 
 ```bash
 sudo docker run --rm \
@@ -114,27 +125,37 @@ sudo docker run --rm \
   --email TU_EMAIL@dominio.com --agree-tos --no-eff-email
 ```
 
-Confirmar que se creo:
+Confirmar: `sudo ls /var/lib/docker/volumes/recepcioneq_certbot_certs/_data/live/`
+debe listar `eqapk.recepcioneq.com`.
+
+## Paso 6 — Activar HTTPS y blindar
+
+### 6a. Agregar el block :443 al template y regenerar
 
 ```bash
-sudo ls /var/lib/docker/volumes/recepcioneq_certbot_certs/_data/live/
-# debe aparecer eqapk.recepcioneq.com
+cd /home/ubuntu/recepcioneq
+# Pegar al final del template el segundo server { listen 443 ssl ... } de
+# deploy/nginx-eqapk.conf (el proxy a eqapk-api:3000).
+nano nginx/nginx.ssl.conf
+
+DOMAIN=$(grep -E '^DOMAIN=' .env | head -1 | sed -E 's/^DOMAIN=//; s/^"//; s/"$//')
+sed "s/__DOMAIN__/${DOMAIN}/g" nginx/nginx.ssl.conf > nginx/nginx.conf
+sudo docker exec recepcioneq-nginx-1 nginx -t && sudo docker exec recepcioneq-nginx-1 nginx -s reload
 ```
 
-## Paso 6 — Activar HTTPS
-
-Ahora si, agregar el **block :443** de `deploy/nginx-eqapk.conf` al mismo
-`nginx.conf`, validar y recargar:
+### 6b. Verificar ambos sitios
 
 ```bash
-sudo docker exec recepcioneq-nginx-1 nginx -t
-sudo docker exec recepcioneq-nginx-1 nginx -s reload
+curl -sI https://api.recepcioneq.com/   | head -1   # recepcion: 404 del app = OK (sigue ruteando)
+curl -sI https://eqapk.recepcioneq.com/ | head -1   # eqapk: 200
 ```
 
-Probar desde afuera:
+### 6c. Commitear en el repo de recepcion (sobrevive a git pull/checkout)
 
 ```bash
-curl -i https://eqapk.recepcioneq.com/
+cd /home/ubuntu/recepcioneq
+git add nginx/nginx.ssl.conf nginx/nginx.conf
+git commit -m "nginx: agregar server block de eqapk.recepcioneq.com"
 ```
 
 El certbot del stack de recepcion ya renueva TODOS los certs del volumen cada
