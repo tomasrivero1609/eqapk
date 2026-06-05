@@ -5,7 +5,7 @@ const DEFAULT_DEV_URL = 'http://192.168.0.216:3000';
 
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_URL ||
-  (__DEV__ ? DEFAULT_DEV_URL : 'https://tu-api-produccion.com');
+  (__DEV__ ? DEFAULT_DEV_URL : 'https://eqapk.recepcioneq.com');
 
 export const API_ENDPOINTS = {
   AUTH: {
