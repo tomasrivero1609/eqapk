@@ -1,0 +1,67 @@
+# Stack de eqapk para el VPS (Eventos Quilmes).
+# - eqapk-db:  Postgres 16 dedicado (datos aislados de recepcion)
+# - eqapk-api: backend NestJS, interno en :3000
+#
+# eqapk-api se engancha a la red existente `recepcioneq_external` para que el
+# nginx del stack de recepcion lo alcance por nombre (proxy_pass http://eqapk-api:3000).
+#
+# Variables sensibles van en un archivo .env junto a este compose (ver .env.vps.example).
+
+services:
+  eqapk-db:
+    image: postgres:16-alpine
+    container_name: eqapk-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: eqapk
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - eqapk_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d eqapk"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eqapk_internal
+
+  eqapk-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: eqapk-api
+    container_name: eqapk-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@eqapk-db:5432/eqapk
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      PORT: "3000"
+      NODE_ENV: production
+      # Google Calendar (opcional; dejar ENABLED=false si no se usa todavia)
+      GOOGLE_CALENDAR_ENABLED: ${GOOGLE_CALENDAR_ENABLED:-false}
+      GOOGLE_CALENDAR_ID_SALON: ${GOOGLE_CALENDAR_ID_SALON:-}
+      GOOGLE_CALENDAR_ID_VISITAS: ${GOOGLE_CALENDAR_ID_VISITAS:-}
+      GOOGLE_CALENDAR_ID_FRANCO: ${GOOGLE_CALENDAR_ID_FRANCO:-}
+      GOOGLE_CLIENT_EMAIL: ${GOOGLE_CLIENT_EMAIL:-}
+      GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY:-}
+      GOOGLE_CALENDAR_TIMEZONE: ${GOOGLE_CALENDAR_TIMEZONE:-America/Argentina/Buenos_Aires}
+    depends_on:
+      eqapk-db:
+        condition: service_healthy
+    networks:
+      - eqapk_internal
+      - recepcioneq_external
+
+volumes:
+  eqapk_pgdata:
+
+networks:
+  eqapk_internal:
+    driver: bridge
+  # Red ya creada por el stack de recepcion; la reutilizamos para que su nginx
+  # alcance a eqapk-api. NO la administra este compose.
+  recepcioneq_external:
+    external: true
+    name: recepcioneq_external
