@@ -1,0 +1,34 @@
+# .easignore — controla qué se sube a EAS Build.
+# OJO: cuando este archivo existe, EAS lo usa EN LUGAR de .gitignore para el upload,
+# así que tiene que incluir también node_modules y artefactos (si no, se subirían).
+# El build solo necesita mobile/; el resto del monorepo no se usa.
+
+# ── Resto del monorepo (no interviene en el build de la app) ──────────────────
+/backend
+/deploy
+/.claude
+/docker-compose.yml
+/.env.vps.example
+/CLAUDE.md
+
+# ── Dependencias y caches (EAS reinstala/regenera en el server) ───────────────
+**/node_modules
+**/.expo
+**/dist
+**/web-build
+**/.gradle
+**/build
+**/Pods
+**/.cxx
+
+# ── Locales / secretos / firmas sueltas ───────────────────────────────────────
+**/.env
+**/*.env.local
+**/*.jks
+**/*.p8
+**/*.p12
+**/*.mobileprovision
+**/local.properties
+**/.DS_Store
+**/*.log
+**/*.tsbuildinfo
